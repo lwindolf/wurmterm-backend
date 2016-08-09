@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf8 -*-
 
 # wurmterm.py - VTE terminal with service auto-discovery and visualizations
@@ -23,7 +24,8 @@
 
 import os
 import gettext
-
+import http.server
+import threading
 import gi
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -300,10 +302,31 @@ class GeditTerminalPanel(Gtk.Box):
         path = path.replace('\\', '\\\\').replace('"', '\\"')
         self._vte.feed_child('cd "%s"\n' % path, -1)
         self._vte.grab_focus()
+        
+class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
+    def do_HEAD(s):
+         s.send_response(200)
+         s.send_header("Content-type", "text/html")
+         s.end_headers()
+    def do_GET(s):
+         s.send_response(200)
+         s.send_header("Content-type", "text/html")
+         s.end_headers()
+         s.wfile.write("<html><head><title>Title goes here.</title></head>".encode('utf-8'))
+         s.wfile.write("<body><p>This is a test.</p>".encode('utf-8'))
+         s.wfile.write(("<p>You accessed path: %s</p>" % s.path).encode('utf-8'))
+         s.wfile.write("</body></html>".encode('utf-8'))
 
-class TestIt(Gtk.Window):
+class WurmTerm(Gtk.Window):
    def __init__(self):
-      super(TestIt, self).__init__()
+      # Setup VTE Terminal
+      super(WurmTerm, self).__init__()
+      
+      # Spawn internal Webserver
+      t = threading.Thread(target = self.run_webserver, args = (self))
+      t.start()
+      
+      # Setup HTML widget and window
       self.set_size_request(1024,400)
       self.connect("destroy", Gtk.main_quit)
       hbox = Gtk.HBox()
@@ -317,9 +340,18 @@ class TestIt(Gtk.Window):
       hbox.add(panel)
       self.add(hbox)
       self.show_all()
-      self.webview.open("http://heise.de")
+      self.webview.open("http://localhost:2048/")
+      
+   def run_webserver(self):
+      server_class = http.server.HTTPServer
+      httpd = server_class(('localhost', 2048), WurmTermHTTPRequestHandler)
+      try:
+         httpd.serve_forever()
+      except KeyboardInterrupt:
+         pass
+      httpd.server_close()
 
-TestIt()
+WurmTerm()
 Gtk.main()
 
 # Let's conform to PEP8
