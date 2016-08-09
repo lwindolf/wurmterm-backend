@@ -70,7 +70,9 @@ class GeditTerminal(Vte.Terminal):
 
         self.reconfigure_vte()
 
-        self.spawn_sync(Vte.PtyFlags.DEFAULT, None, [Vte.get_user_shell()], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
+        #self.spawn_sync(Vte.PtyFlags.DEFAULT, None, [Vte.get_user_shell()], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
+        # FIXME: path to rcfile
+        self.spawn_sync(Vte.PtyFlags.DEFAULT, None, ["/bin/bash", "--rcfile", "wurmterm.rc"], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
 
     def do_drag_data_received(self, drag_context, x, y, data, info, time):
         if info == self.TARGET_URI_LIST:

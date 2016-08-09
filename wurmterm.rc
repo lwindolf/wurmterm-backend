@@ -1,0 +1,7 @@
+echo "wurmterm rc"
+
+# Setup SSH alias
+# FIXME: path to alias script
+alias ssh="ssh -L 127.0.0.1:2046:/tmp/wt.socket "
+
+[ -f ~/.bashrc ] && . ~/.bashrc
