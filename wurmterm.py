@@ -27,6 +27,8 @@ import gettext
 import http.server
 import threading
 import gi
+import re
+
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
@@ -204,6 +206,7 @@ class GeditTerminalPanel(Gtk.Box):
         self._vte.connect("key-press-event", self.on_vte_key_press)
         self._vte.connect("button-press-event", self.on_vte_button_press)
         self._vte.connect("popup-menu", self.on_vte_popup_menu)
+        self._vte.connect("window-title-changed", self.on_window_title_changed)
 
         scrollbar = Gtk.Scrollbar.new(Gtk.Orientation.VERTICAL, self._vte.get_vadjustment())
         scrollbar.show()
@@ -213,11 +216,17 @@ class GeditTerminalPanel(Gtk.Box):
         for child in self.get_children():
             child.destroy()
 
-        self.add_terminal()
-        self._vte.grab_focus()
+        Gtk.main_quit()
+        exit()
+        # FIXME: Shutdown
 
     def do_grab_focus(self):
         self._vte.grab_focus()
+        
+    def on_window_title_changed(self, t):
+        tmp = re.search("@([^\:\s]+)", t.get_window_title())
+        print("Title changed:", t.get_window_title())
+        print("Server name:", tmp.groups()[0])
 
     def on_vte_key_press(self, term, event):
         modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
@@ -328,6 +337,10 @@ class WurmTerm(Gtk.Window):
       t = threading.Thread(target = self.run_webserver, args = (self))
       t.start()
       
+      # Spawn Requester
+      t = threading.Thread(target = self.run_requester, args = (self))
+      t.start()
+      
       # Setup HTML widget and window
       self.set_size_request(1024,400)
       self.connect("destroy", Gtk.main_quit)
@@ -343,8 +356,12 @@ class WurmTerm(Gtk.Window):
       self.add(hbox)
       self.show_all()
       self.webview.open("http://localhost:2048/")
-      
+
+   def run_requester(self):
+      print("Started requester")
+
    def run_webserver(self):
+      print("Started webserver")
       server_class = http.server.HTTPServer
       httpd = server_class(('localhost', 2048), WurmTermHTTPRequestHandler)
       try:
