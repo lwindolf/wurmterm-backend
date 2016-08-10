@@ -1,7 +1,31 @@
 echo "wurmterm rc"
 
+AGENT_CODE='
+use strict;
+use IO::Socket::UNIX qw( SOCK_STREAM SOMAXCONN );
+my $socket_path = "/tmp/wt.socket";
+unlink($socket_path);
+my $l = IO::Socket::UNIX->new(
+   Type   => SOCK_STREAM,
+   Local  => $socket_path,
+   Listen => SOMAXCONN,
+);
+my $s = $l->accept();
+my $line;
+while($line = <$s>) {
+  print "Got command $line\n";
+  my $d = `$line`;
+  $d =~ s/\"//g;
+  print $s "{ \"s\": $?, \"d\": \"$d\" }";
+}
+print "WT Agent Exiting.\n";
+'
+
 # Setup SSH alias
-# FIXME: path to alias script
-alias ssh="ssh -L 127.0.0.1:2046:/tmp/wt.socket "
+ssh() {
+   # FIXME: check for non-trivial ssh that we do not want
+   # to intercept. Check content of $@
+   /usr/bin/ssh -t -L 127.0.0.1:2046:/tmp/wt.socket "$@" "(LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
+}
 
 [ -f ~/.bashrc ] && . ~/.bashrc
