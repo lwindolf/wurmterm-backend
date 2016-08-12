@@ -28,6 +28,8 @@ import http.server
 import threading
 import gi
 import re
+import socket
+import sys
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -35,6 +37,8 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Vte', '2.91')
 gi.require_version('WebKit', '3.0')
 from gi.repository import GObject, GLib, Gio, Pango, Gdk, Gtk, Vte, WebKit
+
+MSGLEN=2048
 
 #from gpdefs import *
 
@@ -206,11 +210,14 @@ class GeditTerminalPanel(Gtk.Box):
         self._vte.connect("key-press-event", self.on_vte_key_press)
         self._vte.connect("button-press-event", self.on_vte_button_press)
         self._vte.connect("popup-menu", self.on_vte_popup_menu)
-        self._vte.connect("window-title-changed", self.on_window_title_changed)
+
 
         scrollbar = Gtk.Scrollbar.new(Gtk.Orientation.VERTICAL, self._vte.get_vadjustment())
         scrollbar.show()
         self.pack_start(scrollbar, False, False, 0)
+
+    def get_vte(self):
+        return self._vte
 
     def on_vte_child_exited(self, term, status):
         for child in self.get_children():
@@ -222,11 +229,6 @@ class GeditTerminalPanel(Gtk.Box):
 
     def do_grab_focus(self):
         self._vte.grab_focus()
-        
-    def on_window_title_changed(self, t):
-        tmp = re.search("@([^\:\s]+)", t.get_window_title())
-        print("Title changed:", t.get_window_title())
-        print("Server name:", tmp.groups()[0])
 
     def on_vte_key_press(self, term, event):
         modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
@@ -328,10 +330,47 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
          s.wfile.write(("<p>You accessed path: %s</p>" % s.path).encode('utf-8'))
          s.wfile.write("</body></html>".encode('utf-8'))
 
+class WurmTermRemoteSocket:
+    def __init__(self, sock = None):
+        if sock is None:
+            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        else:
+            self.sock = sock
+
+    def open(self, name):
+        # FIXME: close previously connected socket
+        #try:
+           self.sock.connect(name)
+        #except socket.error: #, msg:
+        #   print("socket error")
+           #print >>sys.stderr, msg
+
+    def send(self, msg):
+        totalsent = 0
+        while totalsent < MSGLEN:
+            sent = self.sock.send(msg[totalsent:])
+            if sent == 0:
+                raise RuntimeError("socket connection broken")
+            totalsent = totalsent + sent
+
+    def receive(self):
+        chunks = []
+        bytes_recd = 0
+        while bytes_recd < MSGLEN:
+            chunk = self.sock.recv(min(MSGLEN - bytes_recd, 2048))
+            if chunk == b'':
+                raise RuntimeError("socket connection broken")
+            chunks.append(chunk)
+            bytes_recd = bytes_recd + len(chunk)
+        return b''.join(chunks)
+
 class WurmTerm(Gtk.Window):
    def __init__(self):
-      # Setup VTE Terminal
       super(WurmTerm, self).__init__()
+
+      self.current_sock = None
+      self.current_remote = None
+      self.remote_data = {}
       
       # Spawn internal Webserver
       t = threading.Thread(target = self.run_webserver, args = (self))
@@ -357,8 +396,56 @@ class WurmTerm(Gtk.Window):
       self.show_all()
       self.webview.open("http://localhost:2048/")
 
+      # Connect VTE host switch events
+      panel.get_vte().connect("window-title-changed", self.on_window_title_changed)
+
+      self.current_socket = WurmTermRemoteSocket()
+
+   def on_window_title_changed(self, t):
+      title = t.get_window_title()
+      tmp = re.search("@([^\:\s]+)", title)
+      self.set_title(title)
+      if tmp.groups:
+         new_name = tmp.groups()[0]
+         if new_name != self.current_remote:
+             self.current_remote = new_name
+             self.remote_data = {}
+             print("New Server name:", tmp.groups()[0])
+      else:
+         self.current_remote = None
+         self.remote_data = {}
+
+   def run_command_via_sock(self, scope, command):
+      print(scope, command)
+      self.current_socket.send(bytes(command, 'utf-8'))
+      print(self.current_socket.receive())
+
+   def requester(self, user_data):
+      if self.current_remote != None:
+         #filename = os.path.expanduser("~/.wurmterm/hosts/" + self.current_remote + ".sock")
+         filename = os.path.expanduser("~/.wurmterm/hosts/remote.sock")
+         if not os.path.exists(filename):
+            print("Fatal: Socket file", filename, "does not exist")
+         else:
+            self.current_socket.open(filename)
+            print("Remote socket now connected")
+
+         if not 'netstat' in self.remote_data:
+            print("update", self.current_remote)
+            # Fetch essential stuff first (load to avoid doing further
+            # actions on excessive load) and yes: load is a bad indicator...
+            # If all seems fine run netstat/ss for service discovery
+            self.run_command_via_sock('load', 'cat /proc/loadavg')
+            self.run_command_via_sock('netstat', 'netstat -talp')
+         else:
+            print("already initialized", self.current_remote)
+
+      # FIXME: also update stuff
+      return True
+
    def run_requester(self):
       print("Started requester")
+      GLib.timeout_add_seconds(5, self.requester, None)
 
    def run_webserver(self):
       print("Started webserver")

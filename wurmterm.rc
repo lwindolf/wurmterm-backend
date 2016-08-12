@@ -11,8 +11,9 @@ my $l = IO::Socket::UNIX->new(
    Type   => SOCK_STREAM,
    Local  => $socket_path,
    Listen => SOMAXCONN,
-);
+) or die $!;
 my $s = $l->accept();
+print $!;
 my $line;
 while($line = <$s>) {
   print "Got command $line\n";
@@ -20,6 +21,7 @@ while($line = <$s>) {
   $d =~ s/\"//g;
   print $s "{ \"s\": $?, \"d\": \"$d\" }";
 }
+print $!;
 print "WT Agent Exiting.\n";
 '
 
@@ -32,5 +34,8 @@ ssh() {
    # FIXME: check for non-trivial ssh that we do not want
    # to intercept. Check content of $@
    name="$@"
-   /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock $name "(LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
+   # FIXME: for testing use a constant name
+   name="remote"
+   [ -f ~/.wurmterm/hosts/${name}.sock ] && rm -v ~/.wurmterm/hosts/${name}.sock
+   /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock "$@" "(LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
 }
