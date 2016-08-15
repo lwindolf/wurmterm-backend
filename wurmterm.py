@@ -22,14 +22,15 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor,
 # Boston, MA  02110-1301  USA
 
-import os
 import gettext
-import http.server
-import threading
 import gi
+import http.server
+import json
+import os
 import re
 import socket
 import sys
+import threading
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -325,10 +326,12 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
          s.send_response(200)
          s.send_header("Content-type", "text/html")
          s.end_headers()
-         s.wfile.write("<html><head><title>Title goes here.</title></head>".encode('utf-8'))
-         s.wfile.write("<body><p>This is a test.</p>".encode('utf-8'))
-         s.wfile.write(("<p>You accessed path: %s</p>" % s.path).encode('utf-8'))
-         s.wfile.write("</body></html>".encode('utf-8'))
+         try:
+            s.wfile.write("<html><head><title>Title goes here.</title></head>".encode('utf-8'))
+            s.wfile.write(("<body><p>"+json.dumps(wt.get_data())+"</p>").encode('utf-8'))
+            s.wfile.write("</body></html>".encode('utf-8'))
+         except Exception as msg:
+            print(msg)
 
 class WurmTermRemoteSocket:
     def __init__(self, sock = None):
@@ -342,15 +345,28 @@ class WurmTermRemoteSocket:
         return self.connected
 
     def open(self, name):
-        # FIXME: close previously connected socket
+        # FIXME: assert self.connected == False
+        if not os.path.exists(name):
+            print("Fatal: Socket file", name, "does not exist")
+            return
+
         try:
            self.sock.connect(name)
            self.connected = True
+           print("Connected to", name)
         except: # socket.error: #, msg:
            self.connected = False
            print("Failed to connect to", name)
         #   print("socket error")
            #print >>sys.stderr, msg
+
+    def close(self):
+        if self.connected:
+            self.connected = False
+            try:
+               self.sock.close()
+            except:
+               print("Failed to close old socket", name)
 
     def send(self, msg):
         totalsent = 0
@@ -390,13 +406,13 @@ class WurmTerm(Gtk.Window):
       t.start()
       
       # Setup HTML widget and window
-      self.set_size_request(1024,400)
+      self.set_size_request(800,640)
       self.connect("destroy", Gtk.main_quit)
       hbox = Gtk.HBox()
       self.webview = WebKit.WebView()
       sw = Gtk.ScrolledWindow()
       sw.add(self.webview)
-      sw.set_size_request(600,400)
+      sw.set_size_request(300,640)
       panel = GeditTerminalPanel()
 
       hbox.add(sw)
@@ -410,6 +426,9 @@ class WurmTerm(Gtk.Window):
 
       self.current_socket = WurmTermRemoteSocket()
 
+   def get_data(self):
+      return self.remote_data
+
    def on_window_title_changed(self, t):
       title = t.get_window_title()
       tmp = re.search("@([^\:\s]+)", title)
@@ -418,38 +437,46 @@ class WurmTerm(Gtk.Window):
          new_name = tmp.groups()[0]
          if new_name != self.current_remote:
              self.current_remote = new_name
+             self.current_socket.close()
              self.remote_data = {}
              print("New Server name:", tmp.groups()[0])
       else:
+         # FIXME: Refactor duplication
          self.current_remote = None
+         self.current_socket.close()
          self.remote_data = {}
 
    def run_command_via_sock(self, scope, command):
-      print(scope, command)
+      #print(scope, command)
       self.current_socket.send(bytes(command, 'utf-8'))
-      print(self.current_socket.receive())
+      result = self.current_socket.receive()
+      print(scope,result)
+      self.remote_data[scope] = json.loads(result.decode("utf-8"))
 
+   # FIXME: Method name indicates an actor
    def requester(self, user_data):
-      if self.current_remote != None:
-         #filename = os.path.expanduser("~/.wurmterm/hosts/" + self.current_remote + ".sock")
-         filename = os.path.expanduser("~/.wurmterm/hosts/remote.sock")
-         if not os.path.exists(filename):
-            print("Fatal: Socket file", filename, "does not exist")
-         else:
-            self.current_socket.open(filename)
-            print("Remote socket now connected")
+      if self.current_remote != None and not self.current_socket.is_connected():
+         #self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + self.current_remote + ".sock"))
+         self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/remote.sock"))
 
-         if not 'netstat' in self.remote_data and self.current_socket.is_connected():
-            print("update", self.current_remote)
-            # Fetch essential stuff first (load to avoid doing further
-            # actions on excessive load) and yes: load is a bad indicator...
-            # If all seems fine run netstat/ss for service discovery
+      if not self.current_socket.is_connected():
+         return True
+
+      # For now only an initial basic update on connect
+      if not 'netstat' in self.remote_data:
+         print("Initial fetch", self.current_remote)
+         # Fetch essential stuff first (load to avoid doing further
+         # actions on excessive load) and yes: load is a bad indicator...
+         # If all seems fine run netstat/ss for service discovery
+         try:
             self.run_command_via_sock('load', 'cat /proc/loadavg\n')
             self.run_command_via_sock('netstat', 'netstat -talp\n')
-         else:
-            print("already initialized", self.current_remote)
+         except Exception as msg:
+            print("Initial fetch failed!",msg)
+            self.remote_data = {}
+      else:
+         print("FIXME: Implement update", self.current_remote)
 
-      # FIXME: also update stuff
       return True
 
    def run_requester(self):
@@ -466,7 +493,7 @@ class WurmTerm(Gtk.Window):
          pass
       httpd.server_close()
 
-WurmTerm()
+wt = WurmTerm()
 Gtk.main()
 
 # Let's conform to PEP8
