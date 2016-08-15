@@ -355,12 +355,9 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 
 class WurmTermRemoteSocket:
-    def __init__(self, sock = None):
+    def __init__(self):
         self.connected = False
-        if sock is None:
-            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        else:
-            self.sock = sock
+        self.sock = None
             
     def is_connected(self):
         return self.connected
@@ -372,14 +369,13 @@ class WurmTermRemoteSocket:
             return
 
         try:
+           self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
            self.sock.connect(name)
            self.connected = True
            print("Connected to", name)
-        except: # socket.error: #, msg:
+        except Exception as msg:
            self.connected = False
-           print("Failed to connect to", name)
-        #   print("socket error")
-           #print >>sys.stderr, msg
+           print("Failed to connect to", name, msg)
 
     def close(self):
         if self.connected:
@@ -501,11 +497,13 @@ class WurmTerm(Gtk.Window):
          print("FIXME: Implement update", self.current_remote)
          try:
             if not 'apache' in self.remote_data:
-               self.run_command_via_sock('apache', 'apache2ctl -t -D DUMP_VHOSTS\n')
+               self.run_command_via_sock('apache', '/usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n')
             if not 'redis' in self.remote_data:
                self.run_command_via_sock('redis', 'redis-cli info keyspace;redis-cli info replication\n')
             if not 'systemd' in self.remote_data:
                self.run_command_via_sock('systemd', 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n')
+            if not 'dmesg' in self.remote_data:
+               self.run_command_via_sock('dmesg', 'dmesg -T -l emerg,alert,crit,err | tail -10\n')
          except Exception as msg:
             print("Additional fetch failed!",msg)
 
@@ -513,7 +511,7 @@ class WurmTerm(Gtk.Window):
 
    def run_requester(self):
       print("Started requester")
-      GLib.timeout_add_seconds(5, self.requester, None)
+      GLib.timeout_add_seconds(2, self.requester, None)
 
    def run_webserver(self):
       print("Started webserver")
