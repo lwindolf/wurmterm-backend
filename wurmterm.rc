@@ -1,10 +1,9 @@
-echo "wurmterm rc"
-
 [ -f ~/.bashrc ] && . ~/.bashrc
 
 AGENT_CODE='
 use strict;
 use IO::Socket::UNIX qw( SOCK_STREAM SOMAXCONN );
+$| = 1;
 my $socket_path = "/tmp/wt.sock";
 unlink($socket_path);
 my $l = IO::Socket::UNIX->new(
@@ -12,17 +11,15 @@ my $l = IO::Socket::UNIX->new(
    Local  => $socket_path,
    Listen => SOMAXCONN,
 ) or die $!;
+while(1) {
 my $s = $l->accept();
-print $!;
 my $line;
 while($line = <$s>) {
-  print "Got command $line\n";
   my $d = `$line`;
   $d =~ s/\"//g;
-  print $s "{ \"s\": $?, \"d\": \"$d\" }";
+  print $s "{ \"s\": $?, \"d\": \"$d\" }\nEND\n";
 }
-print $!;
-print "WT Agent Exiting.\n";
+}
 '
 
 # Setup SSH alias
@@ -36,6 +33,6 @@ ssh() {
    name="$@"
    # FIXME: for testing use a constant name
    name="remote"
-   [ -a ~/.wurmterm/hosts/${name}.sock ] && rm -v ~/.wurmterm/hosts/${name}.sock
-   /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock "$@" "(LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
+   [ -a ~/.wurmterm/hosts/${name}.sock ] && rm ~/.wurmterm/hosts/${name}.sock
+   /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock "$@" " (LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
 }

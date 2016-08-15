@@ -332,16 +332,23 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 class WurmTermRemoteSocket:
     def __init__(self, sock = None):
+        self.connected = False
         if sock is None:
             self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         else:
             self.sock = sock
+            
+    def is_connected(self):
+        return self.connected
 
     def open(self, name):
         # FIXME: close previously connected socket
-        #try:
+        try:
            self.sock.connect(name)
-        #except socket.error: #, msg:
+           self.connected = True
+        except: # socket.error: #, msg:
+           self.connected = False
+           print("Failed to connect to", name)
         #   print("socket error")
            #print >>sys.stderr, msg
 
@@ -350,7 +357,7 @@ class WurmTermRemoteSocket:
         while totalsent < MSGLEN:
             sent = self.sock.send(msg[totalsent:])
             if sent == 0:
-                raise RuntimeError("socket connection broken")
+                return
             totalsent = totalsent + sent
 
     def receive(self):
@@ -362,7 +369,9 @@ class WurmTermRemoteSocket:
                 raise RuntimeError("socket connection broken")
             chunks.append(chunk)
             bytes_recd = bytes_recd + len(chunk)
-        return b''.join(chunks)
+            if chunk.endswith(b"\nEND\n"):
+                break
+        return b''.join(chunks).replace(b'\nEND\n', b'')
 
 class WurmTerm(Gtk.Window):
    def __init__(self):
@@ -430,13 +439,13 @@ class WurmTerm(Gtk.Window):
             self.current_socket.open(filename)
             print("Remote socket now connected")
 
-         if not 'netstat' in self.remote_data:
+         if not 'netstat' in self.remote_data and self.current_socket.is_connected():
             print("update", self.current_remote)
             # Fetch essential stuff first (load to avoid doing further
             # actions on excessive load) and yes: load is a bad indicator...
             # If all seems fine run netstat/ss for service discovery
-            self.run_command_via_sock('load', 'cat /proc/loadavg')
-            self.run_command_via_sock('netstat', 'netstat -talp')
+            self.run_command_via_sock('load', 'cat /proc/loadavg\n')
+            self.run_command_via_sock('netstat', 'netstat -talp\n')
          else:
             print("already initialized", self.current_remote)
 
