@@ -1,0 +1,39 @@
+body {
+    font-family: Helvetica;
+    font-size:10pt;
+    background:#444;
+    color:#cce;
+}
+
+.node * {
+    float:left;
+    margin-right:6px;
+}
+
+.node .name {
+    color:white;
+    font-weight:bold;
+}
+
+.node .status {
+    font-style:italic;    
+}
+
+#boxes {
+    clear:both;
+}
+
+.box {
+    border:1px solid #77A;
+    margin-bottom:2px;
+}
+
+.box .title {
+    background:#77A;
+    color:black;
+    padding:0 3px;
+}
+
+.box .content {
+    padding:3px;
+}

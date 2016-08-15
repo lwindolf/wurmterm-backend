@@ -39,7 +39,7 @@ gi.require_version('Vte', '2.91')
 gi.require_version('WebKit', '3.0')
 from gi.repository import GObject, GLib, Gio, Pango, Gdk, Gtk, Vte, WebKit
 
-MSGLEN=2048
+MSGLEN=2048*10
 
 #from gpdefs import *
 
@@ -322,16 +322,37 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
          s.send_response(200)
          s.send_header("Content-type", "text/html")
          s.end_headers()
-    def do_GET(s):
+
+    def _fetch_file(s, path, mime = 'text/html'):
+         with open(path, 'r') as f:
+             data = f.read()
          s.send_response(200)
-         s.send_header("Content-type", "text/html")
+         s.send_header("Content-type", mime)
          s.end_headers()
-         try:
-            s.wfile.write("<html><head><title>Title goes here.</title></head>".encode('utf-8'))
-            s.wfile.write(("<body><p>"+json.dumps(wt.get_data())+"</p>").encode('utf-8'))
-            s.wfile.write("</body></html>".encode('utf-8'))
-         except Exception as msg:
-            print(msg)
+         s.wfile.write(data.encode('utf-8'))
+         # FIXME: Error handling
+
+    def do_GET(s):
+         # FIXME: Base path
+         if s.path == '/jquery.js':
+             s._fetch_file("html/jquery.js", 'application/javascript')
+             return
+         if s.path == '/styles.css':
+             s._fetch_file("html/styles.css", 'text/css')
+             return
+
+
+         # FIXME: JSON endpoint
+         if s.path == '/data/current':
+             s.send_response(200)
+             s.send_header("Content-type", "application/json")
+             s.end_headers()
+             s.wfile.write(json.dumps(wt.get_data()).encode('utf-8'))
+             return
+
+         # Default: return index HTML
+         s._fetch_file("html/index.html")
+
 
 class WurmTermRemoteSocket:
     def __init__(self, sock = None):
@@ -399,10 +420,12 @@ class WurmTerm(Gtk.Window):
       
       # Spawn internal Webserver
       t = threading.Thread(target = self.run_webserver, args = (self))
+      t.setDaemon(True)
       t.start()
       
       # Spawn Requester
       t = threading.Thread(target = self.run_requester, args = (self))
+      t.setDaemon(True)
       t.start()
       
       # Setup HTML widget and window
@@ -427,7 +450,7 @@ class WurmTerm(Gtk.Window):
       self.current_socket = WurmTermRemoteSocket()
 
    def get_data(self):
-      return self.remote_data
+      return {"name": self.current_remote, "data": self.remote_data}
 
    def on_window_title_changed(self, t):
       title = t.get_window_title()
@@ -470,12 +493,21 @@ class WurmTerm(Gtk.Window):
          # If all seems fine run netstat/ss for service discovery
          try:
             self.run_command_via_sock('load', 'cat /proc/loadavg\n')
-            self.run_command_via_sock('netstat', 'netstat -talp\n')
+            self.run_command_via_sock('netstat', 'sudo netstat -tlpn || netstat -tln\n')
          except Exception as msg:
             print("Initial fetch failed!",msg)
             self.remote_data = {}
       else:
          print("FIXME: Implement update", self.current_remote)
+         try:
+            if not 'apache' in self.remote_data:
+               self.run_command_via_sock('apache', 'apache2ctl -t -D DUMP_VHOSTS\n')
+            if not 'redis' in self.remote_data:
+               self.run_command_via_sock('redis', 'redis-cli info keyspace;redis-cli info replication\n')
+            if not 'systemd' in self.remote_data:
+               self.run_command_via_sock('systemd', 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n')
+         except Exception as msg:
+            print("Additional fetch failed!",msg)
 
       return True
 

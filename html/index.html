@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type='text/css' href='styles.css'/>
+<script type="text/javascript" src="jquery.js"></script>
+<title>Remote Services</title>
+</head>
+<body>
+	<div class='main'>
+		<div class='node'>
+			<div class='name'></div>
+			<div class='status'></div>
+		</div>
+		<div id='boxes'>
+			SSH to a node with OpenSSH >= 6.7 and socket forwarding
+			enabled to see infos here.
+		</div>
+	</div>
+
+	<script>
+		var host;
+
+		function clear() {
+			$('#boxes').html("");
+		};
+
+		function update() {
+			$.getJSON("/data/current", {})
+			.done(function(d) {
+				if(d.name === null)
+					return;
+
+				if(d.name != host) {
+					host = d.name;
+					clear();
+				}
+				
+				$('.node .name').html(d.name);
+				$('.node .status').html('connected');
+				$.each(d.data, function(name, d) {
+					var id = "box_"+name;
+					if(!$('#'+id).length) {
+						$('#boxes').append("<div class='box' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
+					}
+					var tmp = JSON.stringify(d.d).replace(/\\n/g, "<br/>");
+					$('#'+id+' .content').html(tmp);
+				});
+			})
+			.fail(function(data) {
+				console.log("failed to fetch data!");
+			});
+		}
+
+		(function() {
+			update();
+			setInterval(function() {
+				update();
+			}, 3000);
+		})();
+	</script>
+</body>
+</html> 
