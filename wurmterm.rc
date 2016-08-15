@@ -36,6 +36,6 @@ ssh() {
    name="$@"
    # FIXME: for testing use a constant name
    name="remote"
-   [ -f ~/.wurmterm/hosts/${name}.sock ] && rm -v ~/.wurmterm/hosts/${name}.sock
+   [ -a ~/.wurmterm/hosts/${name}.sock ] && rm -v ~/.wurmterm/hosts/${name}.sock
    /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock "$@" "(LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
 }
