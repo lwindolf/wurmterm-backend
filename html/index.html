@@ -39,6 +39,8 @@
 				$('.node .name').html(d.name);
 				$('.node .status').html('connected');
 				$.each(d.data, function(name, d) {
+					if(d.d === "")
+						return;
 					var id = "box_"+name;
 					if(!$('#'+id).length) {
 						$('#boxes').append("<div class='box' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");

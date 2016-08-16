@@ -15,7 +15,7 @@ while(1) {
 my $s = $l->accept();
 my $line;
 while($line = <$s>) {
-  my $d = `$line 2>/dev/null`;
+  my $d = `($line) 2>/dev/null`;
   $d =~ s/\"//g;
   $d =~ s#[\r\n]+#\\n#g;
   print $s "{ \"s\": $?, \"d\": \"$d\" }\nEND\n";
