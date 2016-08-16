@@ -31,6 +31,7 @@ import re
 import socket
 import sys
 import threading
+import uuid
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -40,6 +41,7 @@ gi.require_version('WebKit', '3.0')
 from gi.repository import GObject, GLib, Gio, Pango, Gdk, Gtk, Vte, WebKit
 
 MSGLEN=2048*10
+instance=str(uuid.uuid1())
 
 #from gpdefs import *
 
@@ -79,7 +81,7 @@ class GeditTerminal(Vte.Terminal):
 
         #self.spawn_sync(Vte.PtyFlags.DEFAULT, None, [Vte.get_user_shell()], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
         # FIXME: path to rcfile
-        self.spawn_sync(Vte.PtyFlags.DEFAULT, None, ["/bin/bash", "--rcfile", "wurmterm.rc"], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
+        self.spawn_sync(Vte.PtyFlags.DEFAULT, None, ["/bin/bash", "--rcfile", "wurmterm.rc"], ["WT_INSTANCE="+instance], GLib.SpawnFlags.SEARCH_PATH, None, None, None)
 
     def do_drag_data_received(self, drag_context, x, y, data, info, time):
         if info == self.TARGET_URI_LIST:
@@ -484,8 +486,7 @@ class WurmTerm(Gtk.Window):
    # FIXME: Method name indicates an actor
    def requester(self, user_data):
       if self.current_remote != None and not self.current_socket.is_connected():
-         #self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + self.current_remote + ".sock"))
-         self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/remote.sock"))
+         self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + instance + ".sock"))
 
       if not self.current_socket.is_connected():
          return True

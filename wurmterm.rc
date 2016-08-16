@@ -28,6 +28,10 @@ while($line = <$s>) {
 
 # Setup SSH alias
 ssh() {
+   if [ "$WT_INSTANCE" == "" ]; then
+      echo "Fatal: no WT_INSTANCE env var passed!"
+   fi
+
    # FIXME: Permissions?
    [ -d ~/.wurmterm ] || mkdir ~/.wurmterm
    [ -d ~/.wurmterm/hosts ] || mkdir ~/.wurmterm/hosts
@@ -36,7 +40,7 @@ ssh() {
    # to intercept. Check content of $@
    name="$@"
    # FIXME: for testing use a constant name
-   name="remote"
+   name=$WT_INSTANCE
    [ -a ~/.wurmterm/hosts/${name}.sock ] && rm ~/.wurmterm/hosts/${name}.sock
    /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock "$@" " (LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
 }
