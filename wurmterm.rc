@@ -11,6 +11,9 @@ my $l = IO::Socket::UNIX->new(
    Local  => $socket_path,
    Listen => SOMAXCONN,
 ) or die $!;
+
+$SIG{HUP} = sub { $l->close(); exit(0); };
+
 while(1) {
 my $s = $l->accept();
 my $line;
