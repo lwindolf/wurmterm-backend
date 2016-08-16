@@ -406,6 +406,15 @@ class WurmTermRemoteSocket:
                 break
         return b''.join(chunks).replace(b'\nEND\n', b'')
 
+
+probes = {
+   'apache'   : 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
+   'redis'    : 'redis-cli info keyspace;redis-cli info replication\n',
+   'systemd'  : 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
+   'dmesg'    : 'dmesg -T -l emerg,alert,crit,err | tail -10\n',
+   'rabbitmq vhosts' : 'sudo rabbitmqctl list_vhosts\n'
+}
+
 class WurmTerm(Gtk.Window):
    def __init__(self):
       super(WurmTerm, self).__init__()
@@ -496,14 +505,9 @@ class WurmTerm(Gtk.Window):
       else:
          print("FIXME: Implement update", self.current_remote)
          try:
-            if not 'apache' in self.remote_data:
-               self.run_command_via_sock('apache', '/usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n')
-            if not 'redis' in self.remote_data:
-               self.run_command_via_sock('redis', 'redis-cli info keyspace;redis-cli info replication\n')
-            if not 'systemd' in self.remote_data:
-               self.run_command_via_sock('systemd', 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n')
-            if not 'dmesg' in self.remote_data:
-               self.run_command_via_sock('dmesg', 'dmesg -T -l emerg,alert,crit,err | tail -10\n')
+            for p in probes:
+               if not p in self.remote_data:
+                  self.run_command_via_sock(p, probes[p])
          except Exception as msg:
             print("Additional fetch failed!",msg)
 
