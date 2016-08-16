@@ -31,6 +31,8 @@ import re
 import socket
 import sys
 import threading
+import uuid
+from pprint import pprint
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -40,6 +42,7 @@ gi.require_version('WebKit', '3.0')
 from gi.repository import GObject, GLib, Gio, Pango, Gdk, Gtk, Vte, WebKit
 
 MSGLEN=2048*10
+instance=str(uuid.uuid1())
 
 #from gpdefs import *
 
@@ -79,7 +82,7 @@ class GeditTerminal(Vte.Terminal):
 
         #self.spawn_sync(Vte.PtyFlags.DEFAULT, None, [Vte.get_user_shell()], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
         # FIXME: path to rcfile
-        self.spawn_sync(Vte.PtyFlags.DEFAULT, None, ["/bin/bash", "--rcfile", "wurmterm.rc"], None, GLib.SpawnFlags.SEARCH_PATH, None, None, None)
+        self.spawn_sync(Vte.PtyFlags.DEFAULT, None, ["/bin/bash", "--rcfile", "wurmterm.rc"], ["WT_INSTANCE="+instance], GLib.SpawnFlags.SEARCH_PATH, None, None, None)
 
     def do_drag_data_received(self, drag_context, x, y, data, info, time):
         if info == self.TARGET_URI_LIST:
@@ -408,11 +411,48 @@ class WurmTermRemoteSocket:
 
 
 probes = {
-   'apache'   : 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
-   'redis'    : 'redis-cli info keyspace;redis-cli info replication\n',
-   'systemd'  : 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
-   'dmesg'    : 'dmesg -T -l emerg,alert,crit,err | tail -10\n',
-   'rabbitmq vhosts' : 'sudo rabbitmqctl list_vhosts\n'
+   'load': {
+        'command': 'cat /proc/loadavg\n'
+   },
+   'netstat': {
+        'command': 'sudo netstat -tlpn || netstat -tln\n'
+   },
+   'apache': {
+        'command': 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
+        'if'     : 'netstat',
+        'matches': 'apache'
+   },
+   'redis': {
+        'command': 'redis-cli info keyspace;redis-cli info replication\n',
+        'if'     : 'netstat',
+        'matches': 'redis'
+   },
+   'systemd': {
+        'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
+        'refresh': 30
+   },
+   'dmesg': {
+        'command': 'dmesg -T -l emerg,alert,crit,err | tail -10\n',
+        'refresh': 60
+   },
+   'rabbitmq vhosts': {
+        'command': 'sudo rabbitmqctl list_vhosts\n',
+        'if'     : 'netstat',
+        'matches': 'rabbit'
+   },
+   'VIPs': {
+        'command': '/sbin/ip a |/bin/grep secondary\n',
+   },
+   'Eureka Services': {
+        'command': "curl -s http://localhost:8761/ | grep '<a href=.http' | sed 's/.*a href=.\([^>]*\).>.*/\1/'\n",
+        'if'     : 'netstat',
+        'matches': ':8761'
+   },
+   'mdstat': {
+        'command': 'cat /proc/mdstat',
+        'if'     : 'df',
+        'matches': '/dev/md'
+   }
 }
 
 class WurmTerm(Gtk.Window):
@@ -474,18 +514,16 @@ class WurmTerm(Gtk.Window):
          self.current_socket.close()
          self.remote_data = {}
 
-   def run_command_via_sock(self, scope, command):
-      #print(scope, command)
-      self.current_socket.send(bytes(command, 'utf-8'))
+   def run_command_via_sock(self, scope):
+      d = dict(probes[scope])
+      self.current_socket.send(bytes(d['command'], 'utf-8'))
       result = self.current_socket.receive()
-      print(scope,result)
       self.remote_data[scope] = json.loads(result.decode("utf-8"))
 
    # FIXME: Method name indicates an actor
    def requester(self, user_data):
       if self.current_remote != None and not self.current_socket.is_connected():
-         #self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + self.current_remote + ".sock"))
-         self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/remote.sock"))
+         self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + instance + ".sock"))
 
       if not self.current_socket.is_connected():
          return True
@@ -497,8 +535,8 @@ class WurmTerm(Gtk.Window):
          # actions on excessive load) and yes: load is a bad indicator...
          # If all seems fine run netstat/ss for service discovery
          try:
-            self.run_command_via_sock('load', 'cat /proc/loadavg\n')
-            self.run_command_via_sock('netstat', 'sudo netstat -tlpn || netstat -tln\n')
+            self.run_command_via_sock('load')
+            self.run_command_via_sock('netstat')
          except Exception as msg:
             print("Initial fetch failed!",msg)
             self.remote_data = {}
@@ -507,7 +545,7 @@ class WurmTerm(Gtk.Window):
          try:
             for p in probes:
                if not p in self.remote_data:
-                  self.run_command_via_sock(p, probes[p])
+                  self.run_command_via_sock(p)
          except Exception as msg:
             print("Additional fetch failed!",msg)
 

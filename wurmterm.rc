@@ -1,18 +1,21 @@
 [ -f ~/.bashrc ] && . ~/.bashrc
 
 AGENT_CODE='
-use strict;
 use IO::Socket::UNIX qw( SOCK_STREAM SOMAXCONN );
 $| = 1;
-my $socket_path = "/tmp/wt.sock";
-unlink($socket_path);
+my $sp = "/tmp/wt.sock";
+unlink($sp);
 my $l = IO::Socket::UNIX->new(
    Type   => SOCK_STREAM,
-   Local  => $socket_path,
+   Local  => $sp,
    Listen => SOMAXCONN,
 ) or die $!;
 
-$SIG{HUP} = sub { $l->close(); exit(0); };
+sub h { $l->close(); exit(0); };
+$SIG{HUP} = \&h;
+$SIG{PIPE} = \&h;
+$SIG{INT} = \&h;
+$SIG{TERM} = \&h;
 
 while(1) {
 my $s = $l->accept();
@@ -22,21 +25,23 @@ while($line = <$s>) {
   $d =~ s/\"//g;
   $d =~ s#[\r\n]+#\\n#g;
   print $s "{ \"s\": $?, \"d\": \"$d\" }\nEND\n";
-}
-}
-'
+}}'
 
 # Setup SSH alias
 ssh() {
+   if [ "$WT_INSTANCE" == "" ]; then
+      echo "Fatal: no WT_INSTANCE env var passed!"
+   fi
+
    # FIXME: Permissions?
    [ -d ~/.wurmterm ] || mkdir ~/.wurmterm
    [ -d ~/.wurmterm/hosts ] || mkdir ~/.wurmterm/hosts
 
    # FIXME: check for non-trivial ssh that we do not want
    # to intercept. Check content of $@
-   name="$@"
-   # FIXME: for testing use a constant name
-   name="remote"
-   [ -a ~/.wurmterm/hosts/${name}.sock ] && rm ~/.wurmterm/hosts/${name}.sock
-   /usr/bin/ssh -t -L ~/.wurmterm/hosts/${name}.sock:/tmp/wt.sock "$@" " (LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' & ); bash -l"
+
+   local_socket=$(readlink -f ~/.wurmterm/hosts/"${WT_INSTANCE}".sock)
+   [ -a $local_socket ] && rm "$local_socket"
+   /usr/bin/ssh -t -L $local_socket:/tmp/wt.sock "$@" " (LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' &);bash -l"
+   rm $local_socket
 }
