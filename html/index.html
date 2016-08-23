@@ -29,7 +29,7 @@
 			$.getJSON("/data/current", {})
 			.done(function(d) {
 				if(d.name === null)
-					return;
+					d.name = "localhost";
 
 				if(d.name != host) {
 					host = d.name;
@@ -45,7 +45,7 @@
 					if(!$('#'+id).length) {
 						$('#boxes').append("<div class='box' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
 					}
-					var tmp = JSON.stringify(d.d).replace(/\\n/g, "<br/>");
+					var tmp = JSON.stringify(d.d).replace(/\\n/g, "<br/>").replace(/\"/g, "");
 					$('#'+id+' .content').html(tmp);
 				});
 			})

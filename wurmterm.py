@@ -29,6 +29,7 @@ import json
 import os
 import re
 import socket
+import subprocess
 import sys
 import threading
 import uuid
@@ -415,7 +416,8 @@ probes = {
         'command': 'cat /proc/loadavg\n'
    },
    'netstat': {
-        'command': 'sudo netstat -tlpn || netstat -tln\n'
+        'command': 'sudo netstat -tlpn || netstat -tln\n',
+        'local'  : True
    },
    'apache': {
         'command': 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
@@ -429,10 +431,12 @@ probes = {
    },
    'systemd': {
         'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
-        'refresh': 30
+        'refresh': 30,
+        'local'  : True
    },
    'dmesg': {
         'command': 'dmesg -T -l emerg,alert,crit,err | tail -10\n',
+        'local'  : True,
         'refresh': 60
    },
    'rabbitmq vhosts': {
@@ -449,7 +453,8 @@ probes = {
         'matches': ':8761'
    },
    'df': {
-        'command': 'df -h\n'
+        'command': 'df -hl -x tmpfs\n',
+        'local'  : True
         # FIXME: output filter only interesting stuff,
         # but keep all data for dependencies like mdstat
    },
@@ -467,6 +472,15 @@ probes = {
         'command': 'echo status |sudo mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads\n',
         'if'     : 'netstat',
         'matches': 'mysqld'
+   },
+   'iptables': {
+        'command': 'sudo iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
+        'if'     : 'IPs',
+        'matches': 'scope global'
+   },
+   'IPs': {
+        'command': '/sbin/ip a |/bin/grep "scope global"\n',
+        'local'  : True
    }
 }
 
@@ -529,7 +543,8 @@ class WurmTerm(Gtk.Window):
          self.current_socket.close()
          self.remote_data = {}
 
-   def run_command_via_sock(self, scope):
+   # Runs a command via socket or on localhost
+   def run_command(self, scope):
       d = dict(probes[scope])
 
       # Apply condition if there is one
@@ -543,17 +558,24 @@ class WurmTerm(Gtk.Window):
               print("Not running",scope,"as condition",d['if'],"matching",d['matches'],"not given")
               return
 
-      self.current_socket.send(bytes(d['command'], 'utf-8'))
-      result = self.current_socket.receive()
-      self.remote_data[scope] = json.loads(result.decode("utf-8"))
+      if self.current_remote:
+          self.current_socket.send(bytes(d['command'], 'utf-8'))
+          result = self.current_socket.receive()
+          self.remote_data[scope] = json.loads(result.decode("utf-8"))
+      else:
+          if not 'local' in d:
+              return
+          proc = subprocess.Popen([d['command']], stdout=subprocess.PIPE, shell=True)
+          (out, err) = proc.communicate()
+          self.remote_data[scope] = dict({ 'd': out.decode("utf-8"), 's':0 })
+
 
    # FIXME: Method name indicates an actor
    def requester(self, user_data):
       if self.current_remote != None and not self.current_socket.is_connected():
          self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + instance + ".sock"))
-
-      if not self.current_socket.is_connected():
-         return True
+         if not self.current_socket.is_connected():
+            return True
 
       # For now only an initial basic update on connect
       if not 'netstat' in self.remote_data:
@@ -562,8 +584,8 @@ class WurmTerm(Gtk.Window):
          # actions on excessive load) and yes: load is a bad indicator...
          # If all seems fine run netstat/ss for service discovery
          try:
-            self.run_command_via_sock('load')
-            self.run_command_via_sock('netstat')
+            self.run_command('load')
+            self.run_command('netstat')
          except Exception as msg:
             print("Initial fetch failed!",msg)
             self.remote_data = {}
@@ -572,7 +594,7 @@ class WurmTerm(Gtk.Window):
          try:
             for p in probes:
                if not p in self.remote_data:
-                  self.run_command_via_sock(p)
+                  self.run_command(p)
          except Exception as msg:
             print("Additional fetch failed!",msg)
 
