@@ -32,7 +32,6 @@ import socket
 import sys
 import threading
 import uuid
-from pprint import pprint
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
