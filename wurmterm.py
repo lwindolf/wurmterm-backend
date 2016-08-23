@@ -32,6 +32,7 @@ import socket
 import sys
 import threading
 import uuid
+from pprint import pprint
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -447,10 +448,25 @@ probes = {
         'if'     : 'netstat',
         'matches': ':8761'
    },
+   'df': {
+        'command': 'df -h\n'
+        # FIXME: output filter only interesting stuff,
+        # but keep all data for dependencies like mdstat
+   },
    'mdstat': {
-        'command': 'cat /proc/mdstat',
+        'command': 'cat /proc/mdstat\n',
         'if'     : 'df',
         'matches': '/dev/md'
+   },
+   'MySQL Databases': {
+        'command': 'echo show databases\; |sudo mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v "^(Database|.*_schema|mysql|sys)\$"\n',
+        'if'     : 'netstat',
+        'matches': 'mysqld'
+   },
+   'MySQL Status': {
+        'command': 'echo status |sudo mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads\n',
+        'if'     : 'netstat',
+        'matches': 'mysqld'
    }
 }
 
@@ -515,6 +531,18 @@ class WurmTerm(Gtk.Window):
 
    def run_command_via_sock(self, scope):
       d = dict(probes[scope])
+
+      # Apply condition if there is one
+      if 'if' in d and 'matches' in d:
+          if not d['if'] in self.remote_data:
+              print("Not running",scope,"as precondition",d['if'],"has no data yet")
+              return
+
+          matches = [m.group(0) for l in self.remote_data[d['if']]['d'] for m in [re.search(d['matches'], l)] if m]
+          if matches == None:
+              print("Not running",scope,"as condition",d['if'],"matching",d['matches'],"not given")
+              return
+
       self.current_socket.send(bytes(d['command'], 'utf-8'))
       result = self.current_socket.receive()
       self.remote_data[scope] = json.loads(result.decode("utf-8"))
