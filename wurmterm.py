@@ -416,8 +416,12 @@ probes = {
         'command': 'cat /proc/loadavg\n'
    },
    'netstat': {
-        'command': 'sudo netstat -tlpn || netstat -tln\n',
-        'local'  : True
+        'command': '(sudo netstat -tlpn || netstat -tln) | grep -v "Active Internet"\n',
+        'local'  : True,
+        'render' : {
+             'type' : 'table',
+             'split': '\s+'
+        }
    },
    'apache': {
         'command': 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
@@ -432,12 +436,27 @@ probes = {
    'systemd': {
         'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
         'refresh': 30,
-        'local'  : True
+        'local'  : True,
+        'render' : {
+            'type'    : 'lines',
+            'severity': {
+                'warning' : 'warn|masked|maintenance',
+                'critical': 'failed'             
+            }
+         }
    },
    'dmesg': {
         'command': 'dmesg -T -l emerg,alert,crit,err | tail -10\n',
         'local'  : True,
-        'refresh': 60
+        'refresh': 60,
+        'render' : {
+            'type'    : 'lines',
+            'severity': {
+                'critical' : 'error|fatal|critical',
+                'warning'  : '\w+'             
+            }
+         }
+
    },
    'rabbitmq vhosts': {
         'command': 'sudo rabbitmqctl list_vhosts\n',
@@ -446,17 +465,29 @@ probes = {
    },
    'VIPs': {
         'command': '/sbin/ip a |/bin/grep secondary\n',
+        'render' : {
+             'type' : 'table',
+             'split': '\s+'
+        }
    },
    'Eureka Services': {
-        'command': "curl -s http://localhost:8761/ | grep '<a href=.http' | sed 's/.*a href=.\([^>]*\).>.*/\1/'\n",
+        'command': "curl -s http://localhost:8761/ | grep '<a href=.http' | sed 's/.*a href=.\([^>]*\).>.*/\\1/'\n",
         'if'     : 'netstat',
         'matches': ':8761'
    },
    'df': {
         'command': 'df -hl -x tmpfs\n',
-        'local'  : True
+        'local'  : True,
         # FIXME: output filter only interesting stuff,
         # but keep all data for dependencies like mdstat
+        'render' : {
+             'type' : 'table',
+             'split': '\s+',
+             'severity': {
+                'critical' : '^(?:100|9[0-9])%',
+                'warning'  : '^(?:8[0-9])%'
+            }
+        }
    },
    'mdstat': {
         'command': 'cat /proc/mdstat\n',
@@ -473,13 +504,23 @@ probes = {
         'if'     : 'netstat',
         'matches': 'mysqld'
    },
-   'iptables': {
-        'command': 'sudo iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
-        'if'     : 'IPs',
-        'matches': 'scope global'
-   },
+#   'iptables': {
+#        'command': 'sudo iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
+#        'if'     : 'IPs',
+#        'matches': 'scope global'
+#   },
    'IPs': {
         'command': '/sbin/ip a |/bin/grep "scope global"\n',
+        'local'  : True,
+        'render' : {
+             'type' : 'table',
+             'split': '\s+'
+        }
+   },
+   'Tomcat': {
+        'command': "/usr/bin/pgrep -a java | /bin/sed 's/.*-Dcatalina.base=\([^ ]*\) .*/\\1/' | while read d; do echo $d; (cd $d; find webapps -type d -maxdepth 1;find webapps/ -name '*.war' -maxdepth 1); done\n",
+        'if'     : 'netstat',
+        'matches': 'java',
         'local'  : True
    }
 }
@@ -553,11 +594,11 @@ class WurmTerm(Gtk.Window):
               print("Not running",scope,"as precondition",d['if'],"has no data yet")
               return
 
-          matches = [m.group(0) for l in self.remote_data[d['if']]['d'] for m in [re.search(d['matches'], l)] if m]
-          if matches == None:
+          matches = [m.group(0) for l in self.remote_data[d['if']]['d'].splitlines() for m in [re.search(d['matches'], l)] if m]
+          if len(matches) == 0:
               print("Not running",scope,"as condition",d['if'],"matching",d['matches'],"not given")
               return
-
+      print("run command",scope)
       if self.current_remote:
           self.current_socket.send(bytes(d['command'], 'utf-8'))
           result = self.current_socket.receive()
@@ -568,6 +609,10 @@ class WurmTerm(Gtk.Window):
           proc = subprocess.Popen([d['command']], stdout=subprocess.PIPE, shell=True)
           (out, err) = proc.communicate()
           self.remote_data[scope] = dict({ 'd': out.decode("utf-8"), 's':0 })
+
+      # Finally copy optional rendering hints to result
+      if 'render' in d:
+          self.remote_data[scope]['render'] = d['render']
 
 
    # FIXME: Method name indicates an actor

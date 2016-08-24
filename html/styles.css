@@ -36,4 +36,25 @@ body {
 
 .box .content {
     padding:3px;
+    overflow-x:auto;
+}
+
+.box .content table {
+    margin:0;
+    padding:0;
+    border-collapse: collapse;
+}
+
+.box .content table td {
+    border:1px solid black;
+}
+
+span.severity_critical {
+    background: red;
+    color: white;
+}
+
+span.severity_warning {
+    background: yellow;
+    color: black;
 }

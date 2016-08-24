@@ -24,6 +24,58 @@
 		function clear() {
 			$('#boxes').html("");
 		};
+		
+		function multiMatch(text, severities) {
+		  	var matchResult = undefined;
+			$.each(['critical','warning'], function(i, name) {
+				if(severities[name] === undefined)
+					return;
+				
+				var re = new RegExp(severities[name]);
+				var matches = re.exec(text);
+				if(matches !== null) {
+					//console.log(text+re+" result: "+name);
+					matchResult = name;
+					return;
+				}
+			});
+			return matchResult;
+		}
+		
+		function markSeverity(s, options) {
+				if(options === undefined || options['severity'] === undefined)
+					return s;
+
+				switch(multiMatch(s, options.severity)) {
+					case 'critical':
+					    return "<span class='severity_critical'>"+s+"</span>";
+					case 'warning':
+					    return "<span class='severity_warning'>"+s+"</span>";					
+					default:
+						return s;
+				}
+		}
+
+		function renderString(s, options) {
+			var res = new Array();
+			$.each(JSON.stringify(s).split(/\\n/), function(i, line) {
+				res.push(markSeverity(line.replace(/\"/g, ""), options));
+			});
+			return res.join('<br/>');
+ 		}
+
+		function renderTable(s, options) {
+			var res = "<table>";
+			var re = new RegExp(options.split);
+			$.each(s.split(/\n/), function(i, line) {
+				res += "<tr>";
+				$.each(line.split(re), function(j, column) {
+					res += "<td>"+markSeverity(column,options)+"</td>";
+				});
+				res += "</tr>";
+			});
+			return res + "</table>";
+		}
 
 		function update() {
 			$.getJSON("/data/current", {})
@@ -45,7 +97,19 @@
 					if(!$('#'+id).length) {
 						$('#boxes').append("<div class='box' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
 					}
-					var tmp = JSON.stringify(d.d).replace(/\\n/g, "<br/>").replace(/\"/g, "");
+										
+					var tmp = "Fatal: rendering error!";
+					if('render' in d) {
+						if(d.render.type === 'table') {
+							tmp = renderTable(d.d, d.render);
+						} else if(d.render.type === 'lines') {
+							tmp = renderString(d.d, d.render);
+						} else {
+							tmp = "Fatal: unknown renderer type "+d.render.type;
+						}
+					} else {
+						tmp = renderString(d.d);
+					}
 					$('#'+id+' .content').html(tmp);
 				});
 			})
