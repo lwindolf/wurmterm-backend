@@ -34,6 +34,7 @@ import sys
 import threading
 import uuid
 from pprint import pprint
+from time import time
 
 gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
@@ -522,6 +523,18 @@ probes = {
         'if'     : 'netstat',
         'matches': 'java',
         'local'  : True
+   },
+   'ping 8.8.8.8': {
+        'command': "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'",
+        'local'  : True,
+        'refresh': 30,
+        'render' : {
+             'type' : 'lines',
+             'severity': {
+                'critical' : '(?:[2-9][0-9][0-9][0-9]\.[0-9][0-9][0-9]|[3-9][0-9]% packet loss|unreachable|failed)',
+                'warning'  : '(?:[1-9][0-9][0-9][0-9]\.[0-9][0-9][0-9]|[1-2][0-9]% packet loss)'
+            }
+        }
    }
 }
 
@@ -591,24 +604,28 @@ class WurmTerm(Gtk.Window):
       # Apply condition if there is one
       if 'if' in d and 'matches' in d:
           if not d['if'] in self.remote_data:
-              print("Not running",scope,"as precondition",d['if'],"has no data yet")
+              #print("Not running",scope,"as precondition",d['if'],"has no data yet")
               return
 
           matches = [m.group(0) for l in self.remote_data[d['if']]['d'].splitlines() for m in [re.search(d['matches'], l)] if m]
           if len(matches) == 0:
-              print("Not running",scope,"as condition",d['if'],"matching",d['matches'],"not given")
+              #print("Not running",scope,"as condition",d['if'],"matching",d['matches'],"not given")
               return
-      print("run command",scope)
-      if self.current_remote:
-          self.current_socket.send(bytes(d['command'], 'utf-8'))
-          result = self.current_socket.receive()
-          self.remote_data[scope] = json.loads(result.decode("utf-8"))
-      else:
-          if not 'local' in d:
-              return
-          proc = subprocess.Popen([d['command']], stdout=subprocess.PIPE, shell=True)
-          (out, err) = proc.communicate()
-          self.remote_data[scope] = dict({ 'd': out.decode("utf-8"), 's':0 })
+
+      try:
+          self.remote_data[scope] = dict({ 'd': 'Probing...', 's':0, 'ts': time() })
+          if self.current_remote:
+              self.current_socket.send(bytes(d['command'], 'utf-8'))
+              result = self.current_socket.receive()
+              self.remote_data[scope] = json.loads(result.decode("utf-8"))
+          else:
+              if not 'local' in d:
+                  return
+              proc = subprocess.Popen([d['command']], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+              (out, err) = proc.communicate()
+              self.remote_data[scope] = dict({ 'd': out.decode("utf-8")+err.decode("utf-8"), 's':0, 'ts': time() })
+      except Exception as msg:
+          self.remote_data[scope] = dict({ 'd': msg, 's':1, 'ts': time() })
 
       # Finally copy optional rendering hints to result
       if 'render' in d:
@@ -635,13 +652,21 @@ class WurmTerm(Gtk.Window):
             print("Initial fetch failed!",msg)
             self.remote_data = {}
       else:
-         print("FIXME: Implement update", self.current_remote)
          try:
             for p in probes:
+               # Determine if initial fetch or update is required
+               refresh_needed = False
                if not p in self.remote_data:
+                  refresh_needed = True
+               elif 'refresh' in probes[p]:
+                  if (self.remote_data[p]['ts'] + probes[p]['refresh']) < time():
+                     refresh_needed = True
+                     print("Updating", p, self.remote_data[p]['ts'], probes[p]['refresh'], time())
+
+               if refresh_needed:
                   self.run_command(p)
          except Exception as msg:
-            print("Additional fetch failed!",msg)
+            print("Fetch failed!",msg)
 
       return True
 
