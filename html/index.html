@@ -93,7 +93,7 @@
 				$.each(d.data, function(name, d) {
 					if(d.d === "")
 						return;
-					var id = "box_"+name.replace(/ /, "_");
+					var id = "box_"+name.replace(/[. ]/g, "_");
 					if(!$('#'+id).length) {
 						$('#boxes').append("<div class='box' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
 					}
