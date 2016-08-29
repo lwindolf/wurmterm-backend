@@ -417,7 +417,7 @@ probes = {
         'command': 'cat /proc/loadavg\n'
    },
    'netstat': {
-        'command': '(sudo netstat -tlpn || netstat -tln) | grep -v "Active Internet"\n',
+        'command': '(sudo netstat -tlpn 2>/dev/null || netstat -tln) | grep -v "Active Internet"\n',
         'local'  : True,
         'render' : {
              'type' : 'table',
@@ -425,7 +425,7 @@ probes = {
         }
    },
    'apache': {
-        'command': 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
+        'command': 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
         'if'     : 'netstat',
         'matches': 'apache'
    },
@@ -446,8 +446,8 @@ probes = {
             }
          }
    },
-   'dmesg': {
-        'command': 'dmesg -T -l emerg,alert,crit,err | tail -10\n',
+   'System Problems': {
+        'command': '/bin/journalctl -k -p 0..3 -S "12 hours ago" -n 10 | /bin/egrep -v "(Logs begin at|No entries)"\n',
         'local'  : True,
         'refresh': 60,
         'render' : {
@@ -525,7 +525,7 @@ probes = {
         'local'  : True
    },
    'ping 8.8.8.8': {
-        'command': "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'",
+        'command': "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'\n",
         'local'  : True,
         'refresh': 30,
         'render' : {
