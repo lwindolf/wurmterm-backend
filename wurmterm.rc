@@ -43,5 +43,5 @@ ssh() {
    local_socket=$(readlink -f ~/.wurmterm/hosts/"${WT_INSTANCE}".sock)
    [ -a $local_socket ] && rm "$local_socket"
    /usr/bin/ssh -t -L $local_socket:/tmp/wt.sock "$@" " (LC_ALL=C /usr/bin/perl -w -e '$AGENT_CODE' &);bash -l"
-   rm $local_socket
+   [ -a $local_socket ] && rm "$local_socket"
 }
