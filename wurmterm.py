@@ -328,6 +328,9 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
          s.send_header("Content-type", "text/html")
          s.end_headers()
 
+    def log_request(code='-', size='-'):
+        return
+
     def _fetch_file(s, path, mime = 'text/html'):
          with open(path, 'r') as f:
              data = f.read()
@@ -417,7 +420,7 @@ probes = {
         'command': 'cat /proc/loadavg\n'
    },
    'netstat': {
-        'command': '(sudo netstat -tlpn 2>/dev/null || netstat -tln) | grep -v "Active Internet"\n',
+        'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln) | grep -v "Active Internet"\n',
         'local'  : True,
         'render' : {
              'type' : 'table',
@@ -425,7 +428,7 @@ probes = {
         }
    },
    'apache': {
-        'command': 'sudo /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
+        'command': 'sudo -n /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
         'if'     : 'netstat',
         'matches': 'apache'
    },
@@ -460,7 +463,7 @@ probes = {
 
    },
    'rabbitmq vhosts': {
-        'command': 'sudo rabbitmqctl list_vhosts\n',
+        'command': 'sudo -n rabbitmqctl list_vhosts\n',
         'if'     : 'netstat',
         'matches': 'rabbit'
    },
@@ -496,17 +499,17 @@ probes = {
         'matches': '/dev/md'
    },
    'MySQL Databases': {
-        'command': 'echo show databases\; |sudo mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v "^(Database|.*_schema|mysql|sys)\$"\n',
+        'command': 'echo show databases\; | sudo -n mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v "^(Database|.*_schema|mysql|sys)\$"\n',
         'if'     : 'netstat',
         'matches': 'mysqld'
    },
    'MySQL Status': {
-        'command': 'echo status |sudo mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads\n',
+        'command': 'echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads\n',
         'if'     : 'netstat',
         'matches': 'mysqld'
    },
 #   'iptables': {
-#        'command': 'sudo iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
+#        'command': 'sudo -n iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
 #        'if'     : 'IPs',
 #        'matches': 'scope global'
 #   },
@@ -620,8 +623,9 @@ class WurmTerm(Gtk.Window):
               self.remote_data[scope] = json.loads(result.decode("utf-8"))
           else:
               if not 'local' in d:
+                  del self.remote_data[scope]
                   return
-              proc = subprocess.Popen([d['command']], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+              proc = subprocess.Popen([d['command']], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True)
               (out, err) = proc.communicate()
               self.remote_data[scope] = dict({ 'd': out.decode("utf-8")+err.decode("utf-8"), 's':0, 'ts': time() })
       except Exception as msg:
@@ -641,7 +645,7 @@ class WurmTerm(Gtk.Window):
 
       # For now only an initial basic update on connect
       if not 'netstat' in self.remote_data:
-         print("Initial fetch", self.current_remote)
+         #print("Initial fetch", self.current_remote)
          # Fetch essential stuff first (load to avoid doing further
          # actions on excessive load) and yes: load is a bad indicator...
          # If all seems fine run netstat/ss for service discovery
@@ -650,7 +654,6 @@ class WurmTerm(Gtk.Window):
             self.run_command('netstat')
          except Exception as msg:
             print("Initial fetch failed!",msg)
-            self.remote_data = {}
       else:
          try:
             for p in probes:
@@ -661,7 +664,7 @@ class WurmTerm(Gtk.Window):
                elif 'refresh' in probes[p]:
                   if (self.remote_data[p]['ts'] + probes[p]['refresh']) < time():
                      refresh_needed = True
-                     print("Updating", p, self.remote_data[p]['ts'], probes[p]['refresh'], time())
+                     #print("Updating", p, self.remote_data[p]['ts'], probes[p]['refresh'], time())
 
                if refresh_needed:
                   self.run_command(p)
@@ -671,11 +674,9 @@ class WurmTerm(Gtk.Window):
       return True
 
    def run_requester(self):
-      print("Started requester")
       GLib.timeout_add_seconds(2, self.requester, None)
 
    def run_webserver(self):
-      print("Started webserver")
       server_class = http.server.HTTPServer
       httpd = server_class(('localhost', 2048), WurmTermHTTPRequestHandler)
       try:
@@ -684,8 +685,11 @@ class WurmTerm(Gtk.Window):
          pass
       httpd.server_close()
 
-wt = WurmTerm()
-Gtk.main()
+if __name__ == '__main__':
+    import signal
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    wt = WurmTerm()
+    Gtk.main()
 
 # Let's conform to PEP8
 # ex:ts=4:et:
