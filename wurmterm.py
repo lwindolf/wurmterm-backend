@@ -417,7 +417,8 @@ class WurmTermRemoteSocket:
 
 probes = {
    'load': {
-        'command': 'cat /proc/loadavg\n'
+        'command': 'cat /proc/loadavg\n',
+        'local': True
    },
    'netstat': {
         'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln) | grep -v "Active Internet"\n',
@@ -561,6 +562,7 @@ class WurmTerm(Gtk.Window):
       
       # Setup HTML widget and window
       self.set_size_request(800,640)
+      self.set_icon_name("utilities-terminal")
       self.connect("destroy", Gtk.main_quit)
       hbox = Gtk.HBox()
       self.webview = WebKit.WebView()
@@ -616,20 +618,29 @@ class WurmTerm(Gtk.Window):
               return
 
       try:
-          self.remote_data[scope] = dict({ 'd': 'Probing...', 's':0, 'ts': time() })
           if self.current_remote:
               self.current_socket.send(bytes(d['command'], 'utf-8'))
-              result = self.current_socket.receive()
-              self.remote_data[scope] = json.loads(result.decode("utf-8"))
+
+              out = self.current_socket.receive()
+              result = json.loads(out.decode("utf-8"))
           else:
               if not 'local' in d:
-                  del self.remote_data[scope]
                   return
-              proc = subprocess.Popen([d['command']], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True)
+
+              proc = subprocess.Popen([d['command']], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, close_fds=True)
               (out, err) = proc.communicate()
-              self.remote_data[scope] = dict({ 'd': out.decode("utf-8")+err.decode("utf-8"), 's':0, 'ts': time() })
+              result = dict({ 'd': out.decode("utf-8") })
+              result['s'] = 0   # FIXME: get correct error code
+
+          if not scope in self.remote_data:
+              self.remote_data[scope] = result
+          else:
+              self.remote_data[scope] = {**self.remote_data[scope], **result}
       except Exception as msg:
-          self.remote_data[scope] = dict({ 'd': msg, 's':1, 'ts': time() })
+          self.remote_data[scope]['d'] = msg
+          self.remote_data[scope]['s'] = 1
+
+      self.remote_data[scope]['ts'] = time()
 
       # Finally copy optional rendering hints to result
       if 'render' in d:
@@ -645,7 +656,6 @@ class WurmTerm(Gtk.Window):
 
       # For now only an initial basic update on connect
       if not 'netstat' in self.remote_data:
-         #print("Initial fetch", self.current_remote)
          # Fetch essential stuff first (load to avoid doing further
          # actions on excessive load) and yes: load is a bad indicator...
          # If all seems fine run netstat/ss for service discovery
