@@ -463,10 +463,15 @@ probes = {
          }
 
    },
-   'rabbitmq vhosts': {
-        'command': 'sudo -n rabbitmqctl list_vhosts\n',
+   'rabbitmq queues': {
+        'command': 'sudo -n rabbitmqctl list_vhosts | egrep -v "Listing vhosts|/" | xargs -n 1 --replace={} sudo -n rabbitmqctl list_queues -p {}\n',
+#        'command': 'sudo -n rabbitmqctl list_vhosts | egrep -v "Listing vhosts|/" | xargs -n 1 sudo -n rabbitmqctl list_queues -p | /bin/grep -v "Listing queues"\n',
         'if'     : 'netstat',
-        'matches': 'rabbit'
+        'matches': ':5672',
+        'render' : {
+             'type' : 'table',
+             'split': '\s+'
+        }
    },
    'VIPs': {
         'command': '/sbin/ip a |/bin/grep secondary\n',
@@ -684,7 +689,7 @@ class WurmTerm(Gtk.Window):
       return True
 
    def run_requester(self):
-      GLib.timeout_add_seconds(2, self.requester, None)
+      GLib.timeout_add_seconds(1, self.requester, None)
 
    def run_webserver(self):
       server_class = http.server.HTTPServer
