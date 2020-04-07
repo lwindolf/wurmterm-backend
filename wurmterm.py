@@ -609,6 +609,7 @@ class WurmTerm(Gtk.Window):
       self.current_remote = None
       self.is_local = True
       self.remote_data = {}
+      self.hostname = socket.gethostname()
 
       # Spawn internal Webserver
       t = threading.Thread(target = self.run_webserver, args = (self))
@@ -662,7 +663,7 @@ class WurmTerm(Gtk.Window):
          self.current_socket.close()
          self.remote_data = {}
 
-      self.is_local = (os.environ['HOSTNAME'] == self.current_remote)
+      self.is_local = (self.hostname == self.current_remote)
 
    # Runs a command via socket or on localhost
    def run_command(self, scope):
