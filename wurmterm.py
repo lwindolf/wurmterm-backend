@@ -5,7 +5,7 @@
 # This file is derived from gedit plugin 'terminal'
 #
 # Copyright (C) 2005-2006 - Paolo Borelli
-# Copyright (C) 2016 - Lars Windolf
+# Copyright (C) 2016-2020 - Lars Windolf
 #
 # gedit is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -418,11 +418,13 @@ class WurmTermRemoteSocket:
 probes = {
    'load': {
         'command': 'cat /proc/loadavg\n',
-        'local': True
+        'local': True,
+        'refresh': 30
    },
    'netstat': {
         'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln) | grep -v "Active Internet"\n',
         'local'  : True,
+        'refresh': 30,
         'render' : {
              'type' : 'table',
              'split': '\s+'
@@ -436,7 +438,8 @@ probes = {
    'redis': {
         'command': 'redis-cli info keyspace;redis-cli info replication\n',
         'if'     : 'netstat',
-        'matches': 'redis'
+        'matches': 'redis',
+        'refresh': 30,
    },
    'systemd': {
         'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
@@ -483,6 +486,7 @@ probes = {
    'df': {
         'command': 'df -hl -x tmpfs | grep -v loop\n',
         'local'  : True,
+        'refresh': 30,
         # FIXME: output filter only interesting stuff,
         # but keep all data for dependencies like mdstat
         'render' : {
@@ -497,6 +501,7 @@ probes = {
    'k8s Current NS': {
        'command': 'kubectl get pods',
        'local'  : True,
+       'refresh': 30,
        'render' : {
            'type' : 'table',
            'split': '\s+',
@@ -509,6 +514,7 @@ probes = {
    'k8s Failed Pods': {
         'command': 'kubectl get pods -A | egrep -i "Failed|Pending"',
         'local'  : True,
+        'refresh': 30,
         'render' : {
             'type' : 'table',
             'split': '\s+',
@@ -521,7 +527,8 @@ probes = {
    'mdstat': {
         'command': 'cat /proc/mdstat\n',
         'if'     : 'df',
-        'matches': '/dev/md'
+        'matches': '/dev/md',
+        'refresh': 30,
    },
    'MySQL Databases': {
         'command': 'echo show databases\; | sudo -n mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v "^(Database|.*_schema|mysql|sys)\$"\n',
@@ -531,7 +538,8 @@ probes = {
    'MySQL Status': {
         'command': 'echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads\n',
         'if'     : 'netstat',
-        'matches': 'mysqld'
+        'matches': 'mysqld',
+        'refresh': 30,
    },
 #   'iptables': {
 #        'command': 'sudo -n iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
