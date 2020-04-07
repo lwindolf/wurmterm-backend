@@ -40,8 +40,8 @@ gi.require_version('Pango', '1.0')
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('Vte', '2.91')
-gi.require_version('WebKit', '3.0')
-from gi.repository import GObject, GLib, Gio, Pango, Gdk, Gtk, Vte, WebKit
+gi.require_version('WebKit2', '4.0')
+from gi.repository import GObject, GLib, Gio, Pango, Gdk, Gtk, Vte, WebKit2
 
 MSGLEN=2048*10
 instance=str(uuid.uuid1())
@@ -321,7 +321,7 @@ class GeditTerminalPanel(Gtk.Box):
         path = path.replace('\\', '\\\\').replace('"', '\\"')
         self._vte.feed_child('cd "%s"\n' % path, -1)
         self._vte.grab_focus()
-        
+
 class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(s):
          s.send_response(200)
@@ -366,7 +366,7 @@ class WurmTermRemoteSocket:
     def __init__(self):
         self.connected = False
         self.sock = None
-            
+
     def is_connected(self):
         return self.connected
 
@@ -446,7 +446,7 @@ probes = {
             'type'    : 'lines',
             'severity': {
                 'warning' : 'warn|masked|maintenance',
-                'critical': 'failed'             
+                'critical': 'failed'
             }
          }
    },
@@ -458,7 +458,7 @@ probes = {
             'type'    : 'lines',
             'severity': {
                 'critical' : 'error|fatal|critical',
-                'warning'  : '\w+'             
+                'warning'  : '\w+'
             }
          }
 
@@ -548,24 +548,25 @@ class WurmTerm(Gtk.Window):
 
       self.current_sock = None
       self.current_remote = None
+      self.is_local = True
       self.remote_data = {}
-      
+
       # Spawn internal Webserver
       t = threading.Thread(target = self.run_webserver, args = (self))
       t.setDaemon(True)
       t.start()
-      
+
       # Spawn Requester
       t = threading.Thread(target = self.run_requester, args = (self))
       t.setDaemon(True)
       t.start()
-      
+
       # Setup HTML widget and window
       self.set_size_request(800,640)
       self.set_icon_name("utilities-terminal")
       self.connect("destroy", Gtk.main_quit)
       hbox = Gtk.HBox()
-      self.webview = WebKit.WebView()
+      self.webview = WebKit2.WebView()
       sw = Gtk.ScrolledWindow()
       sw.add(self.webview)
       sw.set_size_request(300,640)
@@ -575,7 +576,7 @@ class WurmTerm(Gtk.Window):
       hbox.add(panel)
       self.add(hbox)
       self.show_all()
-      self.webview.open("http://localhost:2048/")
+      self.webview.load_uri("http://localhost:2048/")
 
       # Connect VTE host switch events
       panel.get_vte().connect("window-title-changed", self.on_window_title_changed)
@@ -602,6 +603,8 @@ class WurmTerm(Gtk.Window):
          self.current_socket.close()
          self.remote_data = {}
 
+      self.is_local = (os.environ['HOSTNAME'] == self.current_remote)
+
    # Runs a command via socket or on localhost
    def run_command(self, scope):
       d = dict(probes[scope])
@@ -618,7 +621,7 @@ class WurmTerm(Gtk.Window):
               return
 
       try:
-          if self.current_remote:
+          if not self.is_local:
               self.current_socket.send(bytes(d['command'], 'utf-8'))
 
               out = self.current_socket.receive()
@@ -649,7 +652,7 @@ class WurmTerm(Gtk.Window):
 
    # FIXME: Method name indicates an actor
    def requester(self, user_data):
-      if self.current_remote != None and not self.current_socket.is_connected():
+      if not self.is_local and not self.current_socket.is_connected():
          self.current_socket.open(os.path.expanduser("~/.wurmterm/hosts/" + instance + ".sock"))
          if not self.current_socket.is_connected():
             return True
