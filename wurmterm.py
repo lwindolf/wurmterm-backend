@@ -447,6 +447,21 @@ probes = {
             }
         }
    },
+   'docker': {
+        'command': 'docker ps -a --format "{{.ID}}|||{{.Names}}|||{{.Status}}|||{{.Image}}|||{{.Ports}}"',
+        'if'     : 'netstat',
+        'matches': '(docker|:2375)',
+        'refresh': 30,
+        'local'  : True,
+        'render' : {
+            'type' : 'table',
+            'split': '\|\|\|',
+            'severity': {
+                'warning' : '^(restarting|removing|paused)',
+                'critical': '^dead'
+            }
+        }
+   },
    'redis': {
         'command': 'redis-cli info keyspace;redis-cli info replication\n',
         'if'     : 'netstat',
