@@ -3,7 +3,7 @@ Linux Terminal with Service Auto-Discovery + Rendering Capabilities
 
 Connection idea:
 
-* SSH alias catching interactive simple connections (ala "ssh <host>")
+* SSH alias catching interactive simple connections (ala "ssh &lt;host>")
 * Alias command adds local port to remote socket forwarding 
   
       ssh -L 127.0.0.1:2046:/tmp/wt.socket <host>
