@@ -422,7 +422,7 @@ probes = {
         'refresh': 30
    },
    'netstat': {
-        'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln) | grep -v "Active Internet"\n',
+        'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln 2>/dev/null || sudo -n ss -etlpn 2>/dev/null || ss -etlnp 2>/dev/null) | egrep -v "Active Internet|Address:Port"\n',
         'local'  : True,
         'refresh': 30,
         'render' : {
@@ -434,6 +434,18 @@ probes = {
         'command': 'sudo -n /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
         'if'     : 'netstat',
         'matches': 'apache'
+   },
+   'AWS EC2': {
+        'command': "(test -n \"$AWS_PROFILE\" && aws ec2 describe-instances) | jq '.Reservations[].Instances[] | .InstanceId, .State.Name, .InstanceType, .Placement.AvailabilityZone, .PublicIpAddress' | xargs -n 5",
+        'refresh': 900,
+        'local'  : True,
+        'render' : {
+            'type' : 'table',
+            'split': '\s+',
+            'severity': {
+                'warning' : 'pending|shutting-down'
+            }
+        }
    },
    'redis': {
         'command': 'redis-cli info keyspace;redis-cli info replication\n',
@@ -664,7 +676,7 @@ class WurmTerm(Gtk.Window):
 
               proc = subprocess.Popen([d['command']], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, close_fds=True)
               (out, err) = proc.communicate()
-              result = dict({ 'd': out.decode("utf-8") })
+              result = dict({ 'd': out.decode("utf-8").rstrip() })
               result['s'] = 0   # FIXME: get correct error code
 
           if not scope in self.remote_data:
@@ -672,7 +684,7 @@ class WurmTerm(Gtk.Window):
           else:
               self.remote_data[scope] = {**self.remote_data[scope], **result}
       except Exception as msg:
-          self.remote_data[scope]['d'] = msg
+          self.remote_data[scope]['d'] = msg.rstrip()
           self.remote_data[scope]['s'] = 1
 
       self.remote_data[scope]['ts'] = time()
