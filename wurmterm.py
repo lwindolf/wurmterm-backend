@@ -417,12 +417,12 @@ class WurmTermRemoteSocket:
 
 probes = {
    'load': {
-        'command': 'cat /proc/loadavg\n',
+        'command': 'cat /proc/loadavg',
         'local': True,
         'refresh': 30
    },
    'netstat': {
-        'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln 2>/dev/null || sudo -n ss -etlpn 2>/dev/null || ss -etlnp 2>/dev/null) | egrep -v "Active Internet|Address:Port"\n',
+        'command': '(sudo -n netstat -tlpn 2>/dev/null || netstat -tln 2>/dev/null || sudo -n ss -etlpn 2>/dev/null || ss -etlnp 2>/dev/null) | egrep -v "Active Internet|Address:Port"',
         'local'  : True,
         'refresh': 30,
         'render' : {
@@ -431,7 +431,7 @@ probes = {
         }
    },
    'apache': {
-        'command': 'sudo -n /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS\n',
+        'command': 'sudo -n /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS',
         'if'     : 'netstat',
         'matches': 'apache'
    },
@@ -463,13 +463,13 @@ probes = {
         }
    },
    'redis': {
-        'command': 'redis-cli info keyspace;redis-cli info replication\n',
+        'command': 'redis-cli info keyspace;redis-cli info replication',
         'if'     : 'netstat',
         'matches': 'redis',
         'refresh': 30,
    },
    'systemd': {
-        'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"\n',
+        'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"',
         'refresh': 30,
         'local'  : True,
         'render' : {
@@ -481,7 +481,7 @@ probes = {
          }
    },
    'System Problems': {
-        'command': '/bin/journalctl -k -p 0..3 -S "12 hours ago" -n 10 | /bin/egrep -v "(Logs begin at|No entries)"\n',
+        'command': '/bin/journalctl -k -p 0..3 -S "12 hours ago" -n 10 | /bin/egrep -v "(Logs begin at|No entries)"',
         'local'  : True,
         'refresh': 60,
         'render' : {
@@ -494,24 +494,24 @@ probes = {
 
    },
    'rabbitmq vhosts': {
-        'command': 'sudo -n rabbitmqctl list_vhosts\n',
+        'command': 'sudo -n rabbitmqctl list_vhosts',
         'if'     : 'netstat',
         'matches': 'rabbit'
    },
    'VIPs': {
-        'command': '/sbin/ip a |/bin/grep secondary\n',
+        'command': '/sbin/ip a | /bin/grep secondary',
         'render' : {
              'type' : 'table',
              'split': '\s+'
         }
    },
    'Eureka Services': {
-        'command': "curl -s http://localhost:8761/ | grep '<a href=.http' | sed 's/.*a href=.\([^>]*\).>.*/\\1/'\n",
+        'command': "curl -s http://localhost:8761/ | grep '<a href=.http' | sed 's/.*a href=.\([^>]*\).>.*/\\1/'",
         'if'     : 'netstat',
         'matches': ':8761'
    },
    'df': {
-        'command': 'df -hl -x tmpfs | grep -v loop\n',
+        'command': 'df -hl -x tmpfs | grep -v loop',
         'local'  : True,
         'refresh': 30,
         # FIXME: output filter only interesting stuff,
@@ -526,7 +526,7 @@ probes = {
         }
    },
    'k8s Current NS': {
-       'command': 'kubectl get pods',
+       'command': 'kubectl get pods 2>/dev/null',
        'local'  : True,
        'refresh': 30,
        'render' : {
@@ -539,7 +539,7 @@ probes = {
        }
    },
    'k8s Failed Pods': {
-        'command': 'kubectl get pods -A | egrep -i "Failed|Pending"',
+        'command': 'kubectl get pods -A 2>/dev/null | egrep -i "Failed|Pending"',
         'local'  : True,
         'refresh': 30,
         'render' : {
@@ -552,29 +552,29 @@ probes = {
         }
    },
    'mdstat': {
-        'command': 'cat /proc/mdstat\n',
+        'command': 'cat /proc/mdstat',
         'if'     : 'df',
         'matches': '/dev/md',
         'refresh': 30,
    },
    'MySQL Databases': {
-        'command': 'echo show databases\; | sudo -n mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v "^(Database|.*_schema|mysql|sys)\$"\n',
+        'command': 'echo show databases\; | sudo -n mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v "^(Database|.*_schema|mysql|sys)\$"',
         'if'     : 'netstat',
         'matches': 'mysqld'
    },
    'MySQL Status': {
-        'command': 'echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads\n',
+        'command': 'echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads',
         'if'     : 'netstat',
         'matches': 'mysqld',
         'refresh': 30,
    },
 #   'iptables': {
-#        'command': 'sudo -n iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"\n',
+#        'command': 'sudo -n iptables -L -n --line-numbers |egrep "^(Chain|[0-9])"|grep -v "policy ACCEPT"',
 #        'if'     : 'IPs',
 #        'matches': 'scope global'
 #   },
    'IPs': {
-        'command': '/sbin/ip a |/bin/grep "scope global"\n',
+        'command': '/sbin/ip a |/bin/grep "scope global"',
         'local'  : True,
         'render' : {
              'type' : 'table',
@@ -582,13 +582,13 @@ probes = {
         }
    },
    'Tomcat': {
-        'command': "/usr/bin/pgrep -a java | /bin/sed 's/.*-Dcatalina.base=\([^ ]*\) .*/\\1/' | while read d; do echo $d; (cd $d; find webapps -type d -maxdepth 1;find webapps/ -name '*.war' -maxdepth 1); done\n",
+        'command': "/usr/bin/pgrep -a java | /bin/sed 's/.*-base.Dcatalina=\([^ ]*\) .*/\\1/' | while read d; do echo $d; (cd $d; find webapps -type d -maxdepth 1;find webapps/ -name '*.war' -maxdepth 1); done",
         'if'     : 'netstat',
         'matches': 'java',
         'local'  : True
    },
    'ping 8.8.8.8': {
-        'command': "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'\n",
+        'command': "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'",
         'local'  : True,
         'refresh': 30,
         'render' : {
@@ -682,7 +682,7 @@ class WurmTerm(Gtk.Window):
 
       try:
           if not self.is_local:
-              self.current_socket.send(bytes(d['command'], 'utf-8'))
+              self.current_socket.send(bytes((d['command'] + '\n'), 'utf-8'))
 
               out = self.current_socket.receive()
               result = json.loads(out.decode("utf-8"))
