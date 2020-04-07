@@ -481,7 +481,7 @@ probes = {
         'matches': ':8761'
    },
    'df': {
-        'command': 'df -hl -x tmpfs\n',
+        'command': 'df -hl -x tmpfs | grep -v loop\n',
         'local'  : True,
         # FIXME: output filter only interesting stuff,
         # but keep all data for dependencies like mdstat
@@ -491,6 +491,30 @@ probes = {
              'severity': {
                 'critical' : '^(?:100|9[0-9])%',
                 'warning'  : '^(?:8[0-9])%'
+            }
+        }
+   },
+   'k8s Current NS': {
+       'command': 'kubectl get pods',
+       'local'  : True,
+       'render' : {
+           'type' : 'table',
+           'split': '\s+',
+           'severity': {
+               'critical' : '^Failed',
+               'warning'  : '^(Init|Pending)'
+           }
+       }
+   },
+   'k8s Failed Pods': {
+        'command': 'kubectl get pods -A | egrep -i "Failed|Pending"',
+        'local'  : True,
+        'render' : {
+            'type' : 'table',
+            'split': '\s+',
+            'severity': {
+                'critical' : '^Failed',
+                'warning'  : '^(Init|Pending)'
             }
         }
    },
