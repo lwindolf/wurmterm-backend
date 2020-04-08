@@ -528,28 +528,41 @@ probes = {
    'k8s Current NS': {
        'command': 'kubectl get pods 2>/dev/null',
        'local'  : True,
-       'refresh': 30,
+       'refresh': 15,
        'render' : {
            'type' : 'table',
            'split': '\s+',
            'severity': {
-               'critical' : '^Failed',
+               'critical' : '^(Err|Failed|ImagePullBackOff)',
                'warning'  : '^(Init|Pending)'
            }
        }
    },
-   'k8s Failed Pods': {
-        'command': 'kubectl get pods -A 2>/dev/null | egrep -i "Failed|Pending"',
+   'k8s Pod Status': {
+        'command': 'kubectl get pods -A 2>/dev/null | egrep -i "Err|Failed|ImagePull|Pending|Creating"',
         'local'  : True,
         'refresh': 30,
         'render' : {
             'type' : 'table',
             'split': '\s+',
             'severity': {
-                'critical' : '^Failed',
+                'critical' : '^(Err|Failed|ImagePullBackOff)',
                 'warning'  : '^(Init|Pending)'
             }
         }
+   },
+   'k8s PVC Status': {
+		'command': 'kubectl get pvc -A 2>/dev/null | egrep -i "Failed|Pending"',
+		'local'  : True,
+		'refresh': 30,
+		'render' : {
+			'type' : 'table',
+			'split': '\s+',
+			'severity': {
+				'critical' : '^Failed',
+				'warning'  : '^(Init|Pending)'
+			}
+		}
    },
    'mdstat': {
         'command': 'cat /proc/mdstat',
