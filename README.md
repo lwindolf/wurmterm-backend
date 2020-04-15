@@ -1,7 +1,25 @@
 # wurmterm
 Linux Terminal with Service Auto-Discovery + Rendering Capabilities
 
-Connection idea:
+## Usage
+
+   ./wurmterm.py
+
+## Installation
+
+To install dependencies on Debian/Ubuntu:
+
+   apt install gir1.2-webkit2-4.0
+
+## Host Wurm Tunneling
+
+To join you when SSHing to other hosts wurmterm injects a SSH alias
+into your bash. Please note that this might break existing aliases
+you have. Using this alias it starts a Perl5 agent on the remote host
+that runs probes as needed. The decision for Perl5 is due to the wide
+support for this type of scripting.
+
+How it works in detail
 
 * SSH alias catching interactive simple connections (ala "ssh &lt;host>")
 * Alias command adds local port to remote socket forwarding 
@@ -28,7 +46,7 @@ Connection idea:
       print qq{Request "$line"\n};
       print $socket "Response\n";
 
-Assumptions
+## Assumptions
 
 * Debian/Ubuntu as target system
 * We rely on socket forwarding allowed
