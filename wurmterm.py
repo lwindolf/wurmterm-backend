@@ -468,7 +468,7 @@ probes = {
         'matches': 'redis',
         'refresh': 30,
    },
-   'systemd': {
+   'systemd units': {
         'command': 'systemctl list-units | /bin/egrep "( loaded (maintenance|failed)| masked )"',
         'refresh': 30,
         'local'  : True,
@@ -480,7 +480,7 @@ probes = {
             }
          }
    },
-   'System Problems': {
+   'systemd journal': {
         'command': '/bin/journalctl -k -p 0..3 -S "12 hours ago" -n 10 | /bin/egrep -v "(Logs begin at|No entries)"',
         'local'  : True,
         'refresh': 60,
@@ -538,7 +538,7 @@ probes = {
            }
        }
    },
-   'k8s Pod Status': {
+   'k8s Pods': {
         'command': 'kubectl get pods -A 2>/dev/null | egrep -i "Err|Failed|ImagePull|Pending|Creating"',
         'local'  : True,
         'refresh': 30,
@@ -551,7 +551,7 @@ probes = {
             }
         }
    },
-   'k8s PVC Status': {
+   'k8s PVCs': {
 		'command': 'kubectl get pvc -A 2>/dev/null | egrep -i "Failed|Pending"',
 		'local'  : True,
 		'refresh': 30,
@@ -563,6 +563,19 @@ probes = {
 				'warning'  : '^(Init|Pending)'
 			}
 		}
+   },
+   'k8s Nodes': {
+       'command': 'kubectl get nodes 2>/dev/null',
+       'local'  : True,
+       'refresh': 30,
+       'render' : {
+           'type' : 'table',
+           'split': '\s+',
+           'severity': {
+               'critical' : 'NotReady',
+               'warning'  : '(Init|Pending)'
+           }
+       }
    },
    'mdstat': {
         'command': 'cat /proc/mdstat',

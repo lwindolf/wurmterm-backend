@@ -16,7 +16,7 @@ body {
 }
 
 .node .status {
-    font-style:italic;    
+    font-style:italic;
 }
 
 #boxes {
@@ -26,6 +26,13 @@ body {
 .box {
     border:1px solid #77A;
     margin-bottom:2px;
+}
+
+.box.severity_warning .title {
+    border-left:9px solid yellow;
+}
+.box.severity_critical .title {
+    border-left:9px solid red;
 }
 
 .box .title {

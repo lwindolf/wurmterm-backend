@@ -13,8 +13,8 @@
 			<div class='status'></div>
 		</div>
 		<div id='boxes'>
-			SSH to a node with OpenSSH >= 6.7 and socket forwarding
-			enabled to see infos here.
+			SSH to any node with OpenSSH >= 6.7 and socket forwarding
+			enabled to see node here.
 		</div>
 	</div>
 
@@ -24,13 +24,13 @@
 		function clear() {
 			$('#boxes').html("");
 		};
-		
+
 		function multiMatch(text, severities) {
 		  	var matchResult = undefined;
 			$.each(['critical','warning'], function(i, name) {
 				if(severities[name] === undefined)
 					return;
-				
+
 				var re = new RegExp(severities[name]);
 				var matches = re.exec(text);
 				if(matches !== null) {
@@ -41,36 +41,40 @@
 			});
 			return matchResult;
 		}
-		
-		function markSeverity(s, options) {
-				if(options === undefined || options['severity'] === undefined)
+
+		// Note: mutates d.probeSeverity
+		function markSeverity(s, d) {
+				if(d['render'] === undefined || d.render['severity'] === undefined)
 					return s;
 
-				switch(multiMatch(s, options.severity)) {
+				switch(multiMatch(s, d.render.severity)) {
 					case 'critical':
+						d.probeSeverity = 'critical'
 					    return "<span class='severity_critical'>"+s+"</span>";
 					case 'warning':
-					    return "<span class='severity_warning'>"+s+"</span>";					
+						if(d.probeSeverity === undefined)
+							d.probeSeverity = 'warning'
+					    return "<span class='severity_warning'>"+s+"</span>";
 					default:
 						return s;
 				}
 		}
 
-		function renderString(s, options) {
+		function renderString(d) {
 			var res = new Array();
-			$.each(JSON.stringify(s).split(/\\n/), function(i, line) {
-				res.push(markSeverity(line.replace(/\"/g, ""), options));
+			$.each(JSON.stringify(d.d).split(/\\n/), function(i, line) {
+				res.push(markSeverity(line.replace(/\"/g, ""), d));
 			});
 			return res.join('<br/>');
  		}
 
-		function renderTable(s, options) {
+		function renderTable(d) {
 			var res = "<table>";
-			var re = new RegExp(options.split);
-			$.each(s.split(/\n/), function(i, line) {
+			var re = new RegExp(d.render.split);
+			$.each(d.d.split(/\n/), function(i, line) {
 				res += "<tr>";
 				$.each(line.split(re), function(j, column) {
-					res += "<td>"+markSeverity(column,options)+"</td>";
+					res += "<td>"+markSeverity(column, d)+"</td>";
 				});
 				res += "</tr>";
 			});
@@ -87,31 +91,73 @@
 					host = d.name;
 					clear();
 				}
-				
+
 				$('.node .name').html(d.name);
 				$('.node .status').html('connected');
-				$.each(d.data, function(name, d) {
-					if(d.d === "")
+				$.each(Object.keys(d.data), function(i, name) {
+					var probe = d.data[name];
+					if(probe.d === "")
 						return;
+
 					var id = "box_"+name.replace(/[. ]/g, "_");
 					if(!$('#'+id).length) {
-						$('#boxes').append("<div class='box' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
+						$('#boxes').append("<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
 					}
-										
+
 					var tmp = "Fatal: rendering error!";
-					if('render' in d) {
-						if(d.render.type === 'table') {
-							tmp = renderTable(d.d, d.render);
-						} else if(d.render.type === 'lines') {
-							tmp = renderString(d.d, d.render);
+					probe.probeSeverity = undefined;
+					if('render' in probe) {
+						if(probe.render.type === 'table') {
+							tmp = renderTable(probe);
+						} else if(probe.render.type === 'lines') {
+							tmp = renderString(probe);
 						} else {
-							tmp = "Fatal: unknown renderer type "+d.render.type;
+							tmp = "Fatal: unknown renderer type "+probe.render.type;
 						}
 					} else {
-						tmp = renderString(d.d);
+						tmp = renderString(probe);
 					}
+
+					if(probe.probeSeverity === undefined)
+						$('.box#'+id)
+							.removeClass('problem')
+							.addClass('ok')
+							.attr('collapsed', $('.box#'+id).attr('autocollapse'))
+					else
+						$('.box#'+id)
+							.removeClass('ok')
+							.addClass('problem')
+							.addClass('severity_'+ probe.probeSeverity)
+							.attr('collapsed', $('.box#'+id).attr('forcecollapse'))
+
 					$('#'+id+' .content').html(tmp);
+
+					// Auto-collapse rendering
+					$('.box[collapsed=1] .content').hide();
+					$('.box[collapsed=0] .content').show();
 				});
+
+				$('.box .title').off().click(function() {
+					var box = $(this).parent();
+
+					if(1 == box.attr('collapsed'))
+						box
+							.attr('collapsed', 0)
+							.attr('autocollapse', 0)
+							.attr('forcecollapse', 0)
+							.find('.content').show();
+					else
+						box
+							.attr('collapsed', 1)
+							.attr('autocollapse', 1)
+							.attr('forcecollapse', 1)
+							.find('.content').hide();
+				});
+
+				var list = document.querySelector('#boxes')
+				var result = [...list.children]
+					.sort((a,b)=>a.innerText>b.innerText?1:-1)
+					.map(node=>list.appendChild(node))
 			})
 			.fail(function(data) {
 				console.log("failed to fetch data!");
@@ -126,4 +172,4 @@
 		})();
 	</script>
 </body>
-</html> 
+</html>
