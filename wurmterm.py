@@ -448,9 +448,9 @@ probes = {
         }
    },
    'docker': {
-        'command': 'docker ps -a --format "{{.ID}}|||{{.Names}}|||{{.Status}}|||{{.Image}}|||{{.Ports}}"',
-        'if'     : 'netstat',
-        'matches': '(docker|:2375)',
+        'command': 'docker info > /dev/null 2>&1 && docker ps -a --format "{{.ID}}|||{{.Names}}|||{{.Status}}|||{{.Image}}|||{{.Ports}}"',
+        'if'     : 'IPs',
+        'matches': 'docker0',
         'refresh': 30,
         'local'  : True,
         'render' : {

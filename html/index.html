@@ -81,6 +81,16 @@
 			return res + "</table>";
 		}
 
+		function triggerProbe(name) {
+			$.getJSON("/probe/"+name, {}).
+			done(function(d) {
+				console.log("done /probe! "+data);
+			})
+			.fail(function(data) {
+				console.log("fail /probe! "+data);
+			})
+		}
+
 		function update() {
 			$.getJSON("/data/current", {})
 			.done(function(d) {
@@ -101,7 +111,17 @@
 
 					var id = "box_"+name.replace(/[. ]/g, "_");
 					if(!$('#'+id).length) {
-						$('#boxes').append("<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='"+id+"'><div class='title'>"+name+"</div><div class='error'></div><div class='content'/></div>");
+						$('#boxes').append(`
+							<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='`+id+`'>
+								<div class='head clearfix'>
+									<div class='title'>`+name+`</div>
+									<div class='reload' title='Reload probe'>
+										<a href='javascript:triggerProbe("`+name+`")'>⭮</a>
+									</div>
+								</div>
+								<div class='error'></div>
+								<div class='content'/>
+							</div>`);
 					}
 
 					var tmp = "";
@@ -143,8 +163,8 @@
 					$('.box[collapsed=0] .content').show();
 				});
 
-				$('.box .title').off().click(function() {
-					var box = $(this).parent();
+				$('.box .head .title').off().click(function() {
+					var box = $(this).parent().parent();
 
 					if(1 == box.attr('collapsed'))
 						box

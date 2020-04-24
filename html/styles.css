@@ -5,6 +5,12 @@ body {
     color:#cce;
 }
 
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
 .node * {
     float:left;
     margin-right:6px;
@@ -26,10 +32,38 @@ body {
 .box {
     border:1px solid #77A;
     margin-bottom:2px;
+    clear: both;
+}
+
+.box .head {
+    background: #77A;
+    position: relative;
+    display: block;
+    clear: both;
+}
+
+.box .head .reload {
+    float: right;
+    width: auto;
+}
+
+.box .head .reload a {
+    color: #77A;
+    text-decoration: none;
+    padding-right: 6px;
+    padding-left: 24px;
+}
+
+.box .reload a:hover {
+    color: silver;
 }
 
 .box .title {
-    border-left:9px solid #77A;
+    float: left;
+    width: auto;
+    border-left: 9px solid #77A;
+    color: black;
+    padding: 0 3px;
 }
 
 .box.severity_warning .title {
@@ -42,15 +76,10 @@ body {
     border-left:9px solid black;
 }
 
-.box .title {
-    background:#77A;
-    color:black;
-    padding:0 3px;
-}
-
 .box .content {
-    padding:3px;
-    overflow-x:auto;
+    clear: both;
+    padding: 3px;
+    overflow-x: auto;
 }
 
 .box .content table {
