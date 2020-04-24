@@ -716,20 +716,32 @@ class WurmTerm(Gtk.Window):
               if not 'local' in d:
                   return
 
-              proc = subprocess.Popen([d['command']], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, close_fds=True)
-              (out, err) = proc.communicate()
-              result = dict({ 'd': out.decode("utf-8").rstrip() })
-              result['s'] = 0   # FIXME: get correct error code
+              timeout = 5
+              if 'timeout' in d:
+                  timeout = d['timeout']
+
+              proc = subprocess.Popen([d['command']], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True)
+              (out, err) = proc.communicate(None, timeout)
+              result = dict({
+                  'd': out.decode("utf-8").rstrip(),
+                  'e': None if err == None else err.decode("utf-8").rstrip()
+              })
+              result['s'] = 0 if proc.returncode == 0 else 1;
 
           if not scope in self.remote_data:
               self.remote_data[scope] = result
           else:
               self.remote_data[scope] = {**self.remote_data[scope], **result}
+
+          self.remote_data[scope]['ts'] = time()
+      except subprocess.TimeoutExpired:
+          # leave old data
+          self.remote_data[scope]['e'] = 'Probe execution timeout!'
+          self.remote_data[scope]['s'] = 2
       except Exception as msg:
-          self.remote_data[scope]['d'] = msg.rstrip()
+          self.remote_data[scope]['e'] = msg.rstrip()
           self.remote_data[scope]['s'] = 1
 
-      self.remote_data[scope]['ts'] = time()
 
       # Finally copy optional rendering hints to result
       if 'render' in d:

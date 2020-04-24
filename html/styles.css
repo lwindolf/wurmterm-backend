@@ -28,11 +28,18 @@ body {
     margin-bottom:2px;
 }
 
+.box .title {
+    border-left:9px solid #77A;
+}
+
 .box.severity_warning .title {
     border-left:9px solid yellow;
 }
 .box.severity_critical .title {
     border-left:9px solid red;
+}
+.box.severity_invalid .title {
+    border-left:9px solid black;
 }
 
 .box .title {

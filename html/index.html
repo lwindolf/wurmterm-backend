@@ -96,23 +96,29 @@
 				$('.node .status').html('connected');
 				$.each(Object.keys(d.data), function(i, name) {
 					var probe = d.data[name];
-					if(probe.d === "")
+					if(probe.d === "" && (probe.s == 0 || probe.e === ""))
 						return;
 
 					var id = "box_"+name.replace(/[. ]/g, "_");
 					if(!$('#'+id).length) {
-						$('#boxes').append("<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='"+id+"'><div class='title'>"+name+"</div><div class='content'/></div>");
+						$('#boxes').append("<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='"+id+"'><div class='title'>"+name+"</div><div class='error'></div><div class='content'/></div>");
 					}
 
-					var tmp = "Fatal: rendering error!";
+					var tmp = "";
 					probe.probeSeverity = undefined;
+					if(probe.s > 0 && undefined !== probe.e) {
+						tmp += "<div class='error'>Probe failed with error: <pre>"+probe.e+"</pre>'";
+						probe.probeSeverity = 'invalid';
+					}
+
 					if('render' in probe) {
 						if(probe.render.type === 'table') {
-							tmp = renderTable(probe);
+							tmp += renderTable(probe);
 						} else if(probe.render.type === 'lines') {
-							tmp = renderString(probe);
+							tmp += renderString(probe);
 						} else {
-							tmp = "Fatal: unknown renderer type "+probe.render.type;
+							tmp += "<div class='error'>Fatal: unknown renderer type "+probe.render.type+"</div>";
+							probe.probeSeverity = 'invalid';
 						}
 					} else {
 						tmp = renderString(probe);
