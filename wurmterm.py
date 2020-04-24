@@ -614,7 +614,7 @@ probes = {
         'local'  : True
    },
    'ping 8.8.8.8': {
-        'command': "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'",
+        'command': "LANG=C /bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'",
         'local'  : True,
         'refresh': 30,
         'render' : {
