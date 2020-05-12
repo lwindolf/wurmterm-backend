@@ -88,7 +88,7 @@ class GeditTerminal(Vte.Terminal):
 
     def do_drag_data_received(self, drag_context, x, y, data, info, time):
         if info == self.TARGET_URI_LIST:
-            self.feed_child(' '.join(["'" + Gio.file_new_for_uri(item).get_path() + "'" for item in Gedit.utils_drop_get_uris(data)]), -1)
+            self.feed_child(' '.join(["'" + Gio.file_new_for_uri(item).get_path() + "'" for item in Gedit.utils_drop_get_uris(data)]).encode('utf-8'))
             Gtk.drag_finish(drag_context, True, False, time);
         else:
             Vte.Terminal.do_drag_data_received(self, drag_context, x, y, data, info, time)
@@ -164,7 +164,6 @@ class GeditTerminal(Vte.Terminal):
         self.set_cursor_blink_mode(self.profile_settings.get_enum("cursor-blink-mode"))
         self.set_cursor_shape(self.profile_settings.get_enum("cursor-shape"))
         self.set_audible_bell(self.profile_settings.get_boolean("audible-bell"))
-        self.set_allow_bold(self.profile_settings.get_boolean("allow-bold"))
         self.set_scroll_on_keystroke(self.profile_settings.get_boolean("scroll-on-keystroke"))
         self.set_scroll_on_output(self.profile_settings.get_boolean("scroll-on-output"))
         self.set_audible_bell(self.defaults['audible_bell'])
@@ -216,7 +215,6 @@ class GeditTerminalPanel(Gtk.Box):
         self._vte.connect("key-press-event", self.on_vte_key_press)
         self._vte.connect("button-press-event", self.on_vte_button_press)
         self._vte.connect("popup-menu", self.on_vte_popup_menu)
-
 
         scrollbar = Gtk.Scrollbar.new(Gtk.Orientation.VERTICAL, self._vte.get_vadjustment())
         scrollbar.show()
@@ -301,12 +299,12 @@ class GeditTerminalPanel(Gtk.Box):
         menu.attach_to_widget(self, None)
 
         if event is not None:
-            menu.popup(None, None, None, None, event.button, event.time)
+            menu.popup_at_pointer(event)
         else:
-            menu.popup(None, None,
-                       lambda m: Gedit.utils_menu_position_under_widget(m, self),
-                       None,
-                       0, Gtk.get_current_event_time())
+            menu.popup_at_widget(self,
+                                 Gdk.Gravity.NORTH_WEST,
+                                 Gdk.Gravity.SOUTH_WEST,
+                                 None)
             menu.select_first(False)
 
     def copy_clipboard(self):
@@ -319,7 +317,7 @@ class GeditTerminalPanel(Gtk.Box):
 
     def change_directory(self, path):
         path = path.replace('\\', '\\\\').replace('"', '\\"')
-        self._vte.feed_child('cd "%s"\n' % path, -1)
+        self._vte.feed_child(('cd "%s"\n' % path).encode('utf-8'))
         self._vte.grab_focus()
 
 class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
