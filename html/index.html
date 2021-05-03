@@ -14,7 +14,7 @@
 		</div>
 		<div id='boxes'>
 			SSH to any node with OpenSSH >= 6.7 and socket forwarding
-			enabled to see node here.
+			enabled to see node infos here.
 		</div>
 	</div>
 
@@ -84,10 +84,10 @@
 		function triggerProbe(name) {
 			$.getJSON("/probe/"+name, {}).
 			done(function(d) {
-				console.log("done /probe! "+data);
+				console.log("done /probe! "+JSON.stringify(d));
 			})
 			.fail(function(data) {
-				console.log("fail /probe! "+data);
+				console.log("fail /probe! "+d);
 			})
 		}
 

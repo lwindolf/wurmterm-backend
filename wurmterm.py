@@ -347,13 +347,20 @@ class WurmTermHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
              s._fetch_file("html/styles.css", 'text/css')
              return
 
-
-         # FIXME: JSON endpoint
          if s.path == '/data/current':
              s.send_response(200)
              s.send_header("Content-type", "application/json")
              s.end_headers()
              s.wfile.write(json.dumps(wt.get_data()).encode('utf-8'))
+             return
+
+         result = re.match(r'\/probe\/([a-zA-Z]+)$', s.path)
+         if None != result:
+             wt.update_probe(result.group(1))
+             s.send_response(200)
+             s.send_header("Content-type", "application/json")
+             s.end_headers()
+             s.wfile.write("{}".encode('utf-8'))
              return
 
          # Default: return index HTML
@@ -669,6 +676,13 @@ class WurmTerm(Gtk.Window):
 
    def get_data(self):
       return {"name": self.current_remote, "data": self.remote_data}
+
+   def update_probe(self, probe):
+      if probe in self.remote_data:
+          # Simply set timestamp back before refresh interval
+          self.remote_data[probe]['ts'] = time() - probes[probe]['refresh'] - 1
+      else:
+          print("No such probe!")
 
    def on_window_title_changed(self, t):
       title = t.get_window_title()
