@@ -1,0 +1,242 @@
+{
+   "load": {
+	"name"   : "System Load",
+        "command": "cat /proc/loadavg",
+        "refresh": 30,
+        "initial": "True",
+        "local"  : "True"
+   },
+   "netstat": {
+	"name"   : "Listening Services",
+        "command": "(sudo -n netstat -tlpn 2>/dev/null || netstat -tln 2>/dev/null || sudo -n ss -etlpn 2>/dev/null || ss -etlnp 2>/dev/null) | grep -v 'Active Internet'",
+        "refresh": 30,
+        "initial": "True",
+        "local"  : "True",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "last": {
+	"name"   : "Recent Logins",
+	"command": "last",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "who": {
+	"name"   : "Active Users",
+	"command": "who",
+	"initial": "True",
+        "refresh": 30,
+        "render" : {
+             "type" : "lines",
+             "severity": {
+                "warning" : ".+"
+	     }
+        }
+   },
+   "netstat-a": {
+        "name"   : "All Connections",
+        "command": "sudo -n netstat -tlpa --numeric-hosts 2>/dev/null | egrep -v '^(Active Internet|Proto)'",
+        "refresh": 30
+   },
+   "apache": {
+        "name"   : "Apache vhosts",
+        "command": "sudo -n /usr/sbin/apache2ctl -t -D DUMP_VHOSTS 2>/dev/null || /usr/sbin/apache2ctl -t -D DUMP_VHOSTS",
+        "if"     : "netstat",
+        "matches": "apache",
+        "type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "varnish": {
+        "command": "varnishstat -1",
+        "if"     : "netstat",
+        "matches": "varnishd",
+	    "type"   : "service",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "memcached": {
+        "command": "printf 'stats\nquit\n' | nc localhost 11211 | /bin/egrep 'STAT (version|threads|bytes|curr_connections)'",
+        "if"     : "netstat",
+        "matches": "memcached",
+	    "type"   : "service",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "redis": {
+	"name"   : "Redis Server",
+        "command": "redis-cli info keyspace;redis-cli info replication",
+        "if"     : "netstat",
+        "matches": "redis",
+	"type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "systemd": {
+	"name"   : "Systemd Problems",
+        "command": "systemctl list-units | /bin/egrep '( loaded (maintenance|failed)| masked )'",
+        "refresh": 30,
+        "initial": "True",
+        "render" : {
+            "type"    : "lines",
+            "severity": {
+                "warning" : "warn|masked|maintenance",
+                "critical": "failed"
+            }
+         }
+   },
+   "System Log": {
+        "command": "/bin/journalctl -k -p 0..3 -S '12 hours ago' -n 10 | /bin/egrep -v '(Logs begin at|No entries)'",
+        "initial": "True",
+        "refresh": 60,
+        "render" : {
+            "type"    : "lines",
+            "severity": {
+                "critical" : "error|fatal|critical",
+                "warning"  : "\\w+"
+            }
+         }
+
+   },
+   "rabbitmq vhosts": {
+        "command": "sudo -n rabbitmqctl list_vhosts",
+        "if"     : "netstat",
+        "matches": ":15672",
+        "type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "VIPs": {
+        "command": "/sbin/ip a |/bin/grep secondary",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "Eureka Services": {
+        "command": "curl -s http://localhost:8761/ | grep '<a href=.http' | sed 's/.*a href=.\\([^>]*\\).>.*/\\1/'",
+        "if"     : "netstat",
+        "matches": ":8761",
+        "type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "df": {
+        "command": "df -hl -x tmpfs",
+        "initial": "True",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+",
+             "severity": {
+                "critical" : "^(?:100|9[0-9])%",
+                "warning"  : "^(?:8[0-9])%"
+            }
+        }
+   },
+   "mdstat": {
+        "command": "cat /proc/mdstat",
+        "if"     : "df",
+        "matches": "/dev/md",
+        "render" : { "type" : "lines" }
+   },
+   "MySQL Databases": {
+        "command": "echo show databases\\; | sudo -n mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v '^(Database|.*_schema|mysql|sys)\\$'",
+        "if"     : "netstat",
+        "matches": "mysqld",
+	"type"   : "service"
+   },
+   "MySQL Status": {
+        "command": "echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads",
+        "if"     : "netstat",
+        "matches": "mysqld",
+	"type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "IPs": {
+        "command": "/sbin/ip a |/bin/grep 'scope global'",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "Tomcat": {
+        "command": "/usr/bin/pgrep -a java 2>/dev/null | /bin/sed 's/.*-Dcatalina.base=\\([^ ]*\\) .*/\\1/' | while read d; do echo $d; (cd $d; find webapps -type d -maxdepth 1;find webapps/ -name '*.war' -maxdepth 1); done",
+        "if"     : "netstat",
+        "matches": "java",
+        "type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "ping": {
+        "command": "/bin/ping -c5 -i 0.2 -w5 8.8.8.8 | /bin/egrep '(^PING 8.8.8.8|^connect|packet loss|^rtt)'",
+        "initial": "True",
+        "refresh": 30,
+        "render" : {
+             "type" : "lines",
+             "severity": {
+                "critical" : "(?:[2-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]|[3-9][0-9]% packet loss|unreachable|failed)",
+                "warning"  : "(?:[1-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]|[1-2][0-9]% packet loss)"
+            }
+        }
+   },
+   "ES Status": {
+        "command": "curl -XGET 'http://localhost:9200/_cat/health?pretty'",
+        "if"     : "netstat",
+        "matches": ":9200",
+        "type"   : "service",
+        "render" : {
+             "type" : "lines",
+             "severity": {
+                "critical" : "red",
+                "warning"  : "yellow"
+            }
+        }
+   },
+   "ES Nodes": {
+        "command": "curl -XGET 'http://localhost:9200/_cat/nodes?pretty'",
+        "if"     : "netstat",
+        "matches": ":9200",
+        "type"   : "service",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+"
+        }
+   },
+   "ES Indices": {
+        "command": "curl -XGET 'http://localhost:9200/_cat/indices?pretty'",
+        "if"     : "netstat",
+        "matches": ":9200",
+        "type"   : "service",
+        "render" : {
+             "type" : "table",
+             "split": "\\s+",
+             "severity": {
+                "critical" : "red",
+                "warning"  : "yellow"
+            }
+        }
+   },
+   "Zookeeper": {
+        "command": "echo dump | nc localhost 2181",
+        "refresh": 60,
+        "if"     : "netstat",
+        "matches": ":2181",
+        "type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "Mail": {
+	"command": "cd /var/spool/mail && sudo -n grep -c Delivered-To *",
+	"initial": "True",
+	"refresh": 120,
+	"render" : {
+             "type" : "lines",
+             "severity": {
+                "critical" : "[0-9][0-9][0-9]$",
+                "warning"  : "[0-9][0-9]$"
+            }
+        }
+   }
+}

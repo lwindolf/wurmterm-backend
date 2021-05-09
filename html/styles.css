@@ -11,9 +11,16 @@ body {
     display: table;
 }
 
-.node * {
-    float:left;
+#nodes {
+    columns:300px 5;
+    column-gap 0;
+}
+
+.node {
     margin-right:6px;
+    -webkit-column-break-inside: avoid;
+              page-break-inside: avoid;
+                   break-inside: avoid;
 }
 
 .node .name {

@@ -1,0 +1,16 @@
+{
+    "name": "polscan-backend",
+    "main": "main.js",
+    "description": "Polscan backend to perform live queries against monitoring APIs and remote connection stats",
+    "license": "GPL-3.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lwindolf/polscan.git"
+    },
+    "dependencies": {
+        "express": ">=4.5.0",
+        "promise": "~8.0.0",
+        "ps-list": "~7.2.0",
+        "stateful-process-command-proxy": "~1.0.1"
+    }
+}
