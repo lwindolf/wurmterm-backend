@@ -1,4 +1,5 @@
 // vim: set ts=4 sw=4:
+/*jshint esversion: 6 */
 /*
   Copyright (C) 2015-2021  Lars Windolf <lars.windolf@gmx.de>
 
@@ -17,14 +18,9 @@
 */
 
 var http = require("http"),
-    https = require("https"),
     express = require("express"),
-    url = require("url"),
     path = require("path"),
-    fs = require("fs"),
     app = express(),
-    promise = require("promise"),
-    net = require("net"),
     StatefulProcessCommandProxy = require("stateful-process-command-proxy");
 const { exec } = require("child_process");
 
@@ -137,14 +133,14 @@ function probe(request, response) {
 		       stderr : res[0].stderr,
 		       next   : []
 		   };
-		   if('name'    in probes[probe]) msg['name']    = probes[probe].name;
-		   if('render'  in probes[probe]) msg['render']  = probes[probe].render;
-		   if('type'    in probes[probe]) msg['type']    = probes[probe].type;
+		   if('name'    in probes[probe]) msg.name    = probes[probe].name;
+		   if('render'  in probes[probe]) msg.render  = probes[probe].render;
+		   if('type'    in probes[probe]) msg.type    = probes[probe].type;
 
 		   // Suggest followup probes
-		   for(p in probes) {
-		      if(probes[p]['if'] === probe && -1 !== res[0].stdout.indexOf(probes[p]['matches']))
-				msg['next'].push(p);
+		   for(var p in probes) {
+		      if(probes[p]['if'] === probe && -1 !== res[0].stdout.indexOf(probes[p].matches))
+				msg.next.push(p);
 		   }
 
 		  response.end(JSON.stringify(msg));
@@ -162,18 +158,6 @@ function probe(request, response) {
    }
 }
 
-function static_content(type, path, response) {
-   try {
-      response.writeHead(200, {'Content-Type': 'application/json'});
-      fs.readFileSync(config["static"][type]+path),
-      response.write(data);
-      response.end();
-   } catch(e) {
-      response.writeHead(404);
-      response.end("File not found");
-   }
-}
-
 // Routing
 
 app.get('/api/hosts', function(req, res) {
@@ -188,10 +172,10 @@ app.get('/api/probe/:probe/:host', function(req, res) {
    probe(req, res);
 });
 
-app.use(express.static(path.join(__dirname, config["static"]["rootdir"])));
+app.use(express.static(path.join(__dirname, config.static.rootdir)));
 
 app.all('*', function(req, res) {
-   res.sendfile('index.html', { root: config["static"]["rootdir"] })
+   res.sendfile('index.html', { root: config.static.rootdir });
 });
 
 http.createServer(app).listen(8181);
