@@ -33,7 +33,7 @@
         "render" : {
              "type" : "lines",
              "severity": {
-                "warning" : ".+"
+                "warning" : ".+\n.+"
 	     }
         }
    },
