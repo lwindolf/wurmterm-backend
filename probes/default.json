@@ -238,5 +238,65 @@
                 "warning"  : "[0-9][0-9]$"
             }
         }
+   },
+   "k8s Current NS": {
+        "command"   : "kubectl get pods 2>/dev/null",
+        "local"     : "True",
+        "localOnly" : "True",
+        "initial": "True",
+        "refresh": 15,
+        "render" : {
+            "type" : "table",
+            "split": "\\s+",
+            "severity": {
+                "critical" : "^(Err|Failed|ImagePullBackOff)",
+                "warning"  : "^(Init|Pending)"
+            }
+        }
+   },
+   "k8s Pods": {
+        "command"   : "kubectl get pods -A 2>/dev/null | egrep -i 'Err|Failed|ImagePull|Pending|Creating'",
+        "local"     : "True",
+        "localOnly" : "True",
+        "initial": "True",
+        "refresh": 30,
+        "render" : {
+            "type" : "table",
+            "split": "\\s+",
+            "severity": {
+            "critical" : "^(Err|Failed|ImagePullBackOff)",
+            "warning"  : "^(Init|Pending)"
+            }
+        }
+   },
+   "k8s PVCs": {
+       "command": "kubectl get pvc -A 2>/dev/null | egrep -i 'Failed|Pending'",
+       "local"     : "True",
+       "localOnly" : "True",
+       "initial": "True",
+       "refresh": 30,
+       "render" : {
+           "type" : "table",
+           "split": "\\s+",
+           "severity": {
+               "critical" : "^Failed",
+               "warning"  : "^(Init|Pending)"
+           }
+       }
+   },
+   "k8s Nodes": {
+       "command": "kubectl get nodes 2>/dev/null",
+       "local"     : "True",
+       "localOnly" : "True",
+       "initial": "True",
+       "refresh": 30,
+       "render" : {
+           "type" : "table",
+           "split": "\\s+",
+           "severity": {
+               "critical" : "NotReady",
+               "warning"  : "(Init|Pending)"
+           }
+       }
    }
 }
