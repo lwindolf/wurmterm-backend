@@ -6,16 +6,16 @@ Linux Terminal helper with Service Auto-Discovery + Rendering Capabilities.
 
 To interactively start
 
-   ./wurm
+    ./wurm
    
 Our via .bashrc
 
-   source ./wurm
+    source ./wurm
 
 ## Installation
 
-   sudo apt-get install npm
-   npm install
+    sudo apt-get install npm
+    npm install
 
 ## Host Wurm Tunneling
 
