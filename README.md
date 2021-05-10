@@ -28,4 +28,5 @@ and will start run probes to the same nodes.
 Wurmterm assumes 
 
 - that it can connect to all those nodes without credentials
+- that you use `ssh <node|ip>` only and handle all private key switching in your SSH config
 - that it is always allowed to sudo (but won't complain if it does not succeed)
