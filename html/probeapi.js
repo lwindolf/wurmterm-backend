@@ -93,8 +93,14 @@ function ProbeAPI() {
 		var now = Date.now();
 		this.updateTimer = setTimeout(this.update.bind(this), 5000);
 		$.each(this.probes, function(name, p) {
+			// On localhost run all local commands
 			if(this.host === 'localhost' && p.local !== 'True')
 			    return;
+
+			// Never run exclusively local commands elsewhere automatically
+			if(this.host !== 'localhost' && p.onlyLocal === 'True')
+			    return;
+
 			if(p.updating === false && p.refresh*1000 < now - p.timestamp)
 			    a.probe(name);
 		});

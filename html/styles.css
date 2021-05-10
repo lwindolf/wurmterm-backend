@@ -13,12 +13,13 @@ body {
 
 #nodes {
 	display: flex;
-	flex-direction: row; 
+	flex-direction: row;
 	flex-wrap: wrap;
 }
 
 .node {
     margin-right:12px;
+    margin-bottom:12px;
 }
 
 #nodes > div {
@@ -39,7 +40,6 @@ body {
 }
 
 .box {
-    border:1px solid #77A;
     margin-bottom:2px;
     clear: both;
 }
@@ -70,25 +70,39 @@ body {
 .box .title {
     float: left;
     width: auto;
-    border-left: 9px solid #77A;
     color: black;
-    padding: 0 3px;
+    padding: 3px;
 }
 
-.box.severity_warning .title {
-    border-left:9px solid yellow;
+.box.empty .head {
+    background: #557;
 }
-.box.severity_critical .title {
-    border-left:9px solid red;
+
+.box.severity_warning .head {
+    background: #ccc;
 }
-.box.severity_invalid .title {
-    border-left:9px solid black;
+.box.severity_critical .head {
+    background: red;
+}
+.box.severity_invalid .head {
+    background: black;
+    color: silver;
+}
+
+.box.collapsed .reload {
+    display: none;
+}
+.box.collapsed {
+    float: left;
+    margin-right: 3px;
+    clear: none;
 }
 
 .box .content {
     clear: both;
     padding: 3px;
     overflow-x: auto;
+    border:1px solid #77A;
 }
 
 .box .content table {

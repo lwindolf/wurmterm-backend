@@ -112,6 +112,18 @@
 			return h.replace(/[^a-zA-Z0-9]/g, '');
 		}
 
+		function resortBoxes(list) {
+			var result = [...list.children]
+				.sort(function (a,b) {
+					if($(a).attr('collapsed')>$(b).attr('collapsed'))
+						return 1;
+					if($(a).attr('collapsed')<$(b).attr('collapsed'))
+						return -1;
+					return (a.innerText>b.innerText)?1:-1;
+				})
+				.map(node=>list.appendChild(node))
+		}
+
 		function probeResultCb(probe, h, d) {
 			var hId = hostToId(h);
 			if(!$(`#${hId}`).length) {
@@ -127,7 +139,7 @@
 			var id = "box_"+hId+"_"+d.name.replace(/[. ]/g, "_");
 			if(!$(`#${id}`).length) {
 				$(`#${hId} .boxes`).append(`
-					<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='`+id+`'>
+					<div class='box collapsed' collapsed='1' autocollapse='1' forcecollapse='0' id='`+id+`'>
 						<div class='head clearfix'>
 							<div class='title'>`+d.name+`</div>
 							<div class='reload' title='Reload probe'>
@@ -158,19 +170,31 @@
 				$('.box#'+id)
 					.removeClass('problem')
 					.addClass('ok')
+					.addClass('collapsed')
+					.removeClass('uncollapsed')
 					.attr('collapsed', $('.box#'+id).attr('autocollapse'))
 			else
 				$('.box#'+id)
 					.removeClass('ok')
 					.addClass('problem')
 					.addClass('severity_'+ d.probeSeverity)
+					.addClass('uncollapsed')
+					.removeClass('collapsed')
 					.attr('collapsed', $('.box#'+id).attr('forcecollapse'))
 
-			$('#'+id+' .content').html(tmp);
+			if(d.stdout === "") {
+				$(`.box#${id}`).addClass('empty')
+				$(`.box#${id} .content`).html('Probe result empty!');
+			} else {
+				$(`.box#${id}`).removeClass('empty')
+				$(`.box#${id} .content`).html(tmp);
+			}
+
+
 
 			// Auto-collapse rendering
-			$('.box[collapsed=1] .content').hide();
-			$('.box[collapsed=0] .content').show();
+			$(`.box#${id}[collapsed=1] .content`).hide();
+			$(`.box#${id}[collapsed=0] .content`).show();
 
 
 			$('.box .head .title').off().click(function() {
@@ -181,19 +205,21 @@
 						.attr('collapsed', 0)
 						.attr('autocollapse', 0)
 						.attr('forcecollapse', 0)
+						.addClass('uncollapsed')
+						.removeClass('collapsed')
 						.find('.content').show();
 				else
 					box
 						.attr('collapsed', 1)
 						.attr('autocollapse', 1)
 						.attr('forcecollapse', 1)
+						.addClass('collapsed')
+						.removeClass('uncollapsed')
 						.find('.content').hide();
-			});
 
-			var list = document.querySelector(`#${hId} .boxes`);
-			var result = [...list.children]
-				.sort((a,b)=>a.innerText>b.innerText?1:-1)
-				.map(node=>list.appendChild(node))
+				resortBoxes($(box).parent()[0]);
+			});
+			resortBoxes($(`#${hId} .boxes`)[0]);
 		}
 
 		(function() {
