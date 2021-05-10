@@ -48,8 +48,8 @@ function ProbeAPI() {
 			p.timestamp = Date.now();
 
 			// Always trigger follow probes, serialization is done in backend
-			for(var p in res.next) {
-				a.probe(host, res.next[p], cb);
+			for(var n in res.next) {
+				a.probe(host, res.next[n], cb);
 			}
 
 			if(undefined !== cb)
@@ -66,8 +66,6 @@ function ProbeAPI() {
 	// update method
 	this.startProbes = function(host, cb, errorCb) {
 		var a = this;
-		console.log(a);
-		console.log(host);
 		Object.keys(a.probes).forEach(function(p) {
 			if(a.probes[p].initial)
 				a.probe(host, p, cb, errorCb);
@@ -98,7 +96,7 @@ function ProbeAPI() {
 			if(this.host === 'localhost' && p.local !== 'True')
 			    return;
 			if(p.updating === false && p.refresh*1000 < now - p.timestamp)
-			    a.probe(name)
+			    a.probe(name);
 		});
 	};
 }
