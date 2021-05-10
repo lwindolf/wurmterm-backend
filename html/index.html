@@ -117,16 +117,14 @@
 			var hId = hostToId(h);
 console.log(h);
 			if(!$(`#${hId}`).length) {
-				$('#nodes').append(`<div id="${hId}">
-					<div class='node'>
+				$('#nodes').append(`<div id="${hId}" class='node'>
 						<div class='name'></div>
 						<div class='status'></div>
 						<div class='boxes'></div>
-					</div>
 				</div>`);
 			}
-			$(`#${hId} .node .name`).html(h);
-			$(`#${hId} .node .status`).html('connected');
+			$(`#${hId}.node .name`).html(h);
+			$(`#${hId}.node .status`).html('connected');
 
 			var id = "box_"+hId+"_"+d.name.replace(/[. ]/g, "_");
 			if(!$(`#${id}`).length) {
