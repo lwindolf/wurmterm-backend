@@ -153,11 +153,13 @@
         "command": "echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads",
         "if"     : "netstat",
         "matches": "mysqld",
-	"type"   : "service",
+        "type"   : "service",
         "render" : { "type" : "lines" }
    },
    "IPs": {
         "command": "/sbin/ip a |/bin/grep 'scope global'",
+        "local"  : "True",
+        "initial": "True",
         "render" : {
              "type" : "table",
              "split": "\\s+"
@@ -296,6 +298,61 @@
            "severity": {
                "critical" : "NotReady",
                "warning"  : "(Init|Pending)"
+           }
+       }
+   },
+   "AWS EC2": {
+       "command": "(test -n \"$AWS_PROFILE\" && aws ec2 describe-instances) | jq \".Reservations[].Instances[] | .InstanceId, .State.Name, .InstanceType, .Placement.AvailabilityZone, .PublicIpAddress\" | xargs -n 5",
+       "refresh": 900,
+       "local"  : "True",
+       "localOnly": "True",
+       "render" : {
+           "type" : "table",
+           "split": "\\s+",
+           "severity": {
+               "warning" : "pending|shutting-down"
+           }
+       }
+   },
+   "docker": {
+       "command": "docker info > /dev/null 2>&1 && docker ps -a --format '{{.ID}}|||{{.Names}}|||{{.Status}}|||{{.Image}}|||{{.Ports}}'",
+       "if"     : "IPs",
+       "matches": "docker0",
+       "refresh": 30,
+       "local"  : "True",
+       "localOnly": "True",
+       "render" : {
+           "type" : "table",
+           "split": "\\|\\|\\|",
+           "severity": {
+               "warning" : "^(restarting|removing|paused)",
+               "critical": "^dead"
+           }
+       }
+   },
+   "APT": {
+       "command": "/usr/lib/update-notifier/apt-check --human-readable",
+       "refresh": 76800,
+       "local"  : "True",
+       "initial": "True",
+       "render" : {
+           "type" : "lines",
+           "split": "\\n",
+           "severity": {
+               "warning" : "security updates"
+           }
+       }
+   },
+   "dpkg": {
+       "command": "sudo -n dpkg -C | awk '/^ / {print $1}' && sudo -n dpkg -l | awk '/^iF/ {print $2}'",
+       "refresh": 76800,
+       "local"  : "True",
+       "initial": "True",
+       "render" : {
+           "type" : "lines",
+           "split": "\\n",
+           "severity": {
+               "warning" : ".+"
            }
        }
    }
