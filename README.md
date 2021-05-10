@@ -1,5 +1,5 @@
 # wurmterm
-Linux Terminal with Service Auto-Discovery + Rendering Capabilities
+Linux Terminal with Service Auto-Discovery + Rendering Capabilities 
 
 ## Usage
 
