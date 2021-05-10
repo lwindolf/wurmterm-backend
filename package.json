@@ -1,0 +1,19 @@
+{
+    "name": "wurmterm",
+    "main": "server.js",
+    "description": "WurmTerm, a friendly wurm walking along your SSH sessions",
+    "license": "GPL-3.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lwindolf/wurmterm.git"
+    },
+    "dependencies": {
+        "express": ">=4.5.0",
+        "jquery": ">=3.6.0",
+        "promise": "~8.0.0",
+        "stateful-process-command-proxy": "~1.0.1"
+    },
+    "scripts": {
+        "test": "jshint *.js html/*.js"
+    }
+}

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+
+set -euo pipefail
+
+PORT=8181
+
+# Start nodejs server if needed, always start in background
+if pgrep -f WTBackend >/dev/null; then
+   server_started=0
+else
+   server_started=1
+   nohup npm start >/dev/null 2>&1 &
+fi
+
+
+# Always open the webpage when server was not yet running and when called
+# without being source (e.g. via .bash_rc)
+if [ "$server_started" = "1" ] || [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
+   x-www-browser "http://localhost:$PORT"
+fi

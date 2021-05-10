@@ -11,9 +11,18 @@ body {
     display: table;
 }
 
-.node * {
-    float:left;
-    margin-right:6px;
+#nodes {
+	display: flex;
+	flex-direction: row; 
+	flex-wrap: wrap;
+}
+
+.node {
+    margin-right:12px;
+}
+
+#nodes > div {
+    width: 300px;
 }
 
 .node .name {

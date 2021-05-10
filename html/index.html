@@ -3,27 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <link rel="stylesheet" type='text/css' href='styles.css'/>
-<script type="text/javascript" src="jquery.js"></script>
-<title>Remote Services</title>
+<script type="text/javascript" src="assets/jquery.js"></script>
+<script type="text/javascript" src="probeapi.js"></script>
+<title>WurmTerm</title>
 </head>
 <body>
 	<div class='main'>
-		<div class='node'>
-			<div class='name'></div>
-			<div class='status'></div>
-		</div>
-		<div id='boxes'>
-			SSH to any node with OpenSSH >= 6.7 and socket forwarding
-			enabled to see node infos here.
+		<h1>WurmTerm 🐛</h1>
+		<div id='nodes'>
 		</div>
 	</div>
 
 	<script>
-		var host;
-
-		function clear() {
-			$('#boxes').html("");
-		};
+		var hosts = {};
+		var pAPI = new ProbeAPI();
 
 		function multiMatch(text, severities) {
 		  	var matchResult = undefined;
@@ -34,7 +27,6 @@
 				var re = new RegExp(severities[name]);
 				var matches = re.exec(text);
 				if(matches !== null) {
-					//console.log(text+re+" result: "+name);
 					matchResult = name;
 					return;
 				}
@@ -62,7 +54,7 @@
 
 		function renderString(d) {
 			var res = new Array();
-			$.each(JSON.stringify(d.d).split(/\\n/), function(i, line) {
+			$.each(JSON.stringify(d.stdout).split(/\\n/), function(i, line) {
 				res.push(markSeverity(line.replace(/\"/g, ""), d));
 			});
 			return res.join('<br/>');
@@ -71,7 +63,7 @@
 		function renderTable(d) {
 			var res = "<table>";
 			var re = new RegExp(d.render.split);
-			$.each(d.d.split(/\n/), function(i, line) {
+			$.each(d.stdout.split(/\n/), function(i, line) {
 				res += "<tr>";
 				$.each(line.split(re), function(j, column) {
 					res += "<td>"+markSeverity(column, d)+"</td>";
@@ -87,114 +79,133 @@
 				console.log("done /probe! "+JSON.stringify(d));
 			})
 			.fail(function(data) {
-				console.log("fail /probe! "+d);
+				console.err("fail /probe! "+d);
 			})
 		}
 
-		function update() {
-			$.getJSON("/data/current", {})
-			.done(function(d) {
-				if(d.name === null)
-					d.name = "localhost";
+		function getAPI(name, callback, errorcb, params) {
+			if(undefined !== params) {
+				name += "?" + params.map(function(obj) {
+					var k = Object.keys(obj)[0];
+					return k + "=" + obj[k];
+				}).join("&");
+			}
 
-				if(d.name != host) {
-					host = d.name;
-					clear();
-				}
-
-				$('.node .name').html(d.name);
-				$('.node .status').html('connected');
-				$.each(Object.keys(d.data), function(i, name) {
-					var probe = d.data[name];
-					if(probe.d === "" && (probe.s == 0 || probe.e === ""))
-						return;
-
-					var id = "box_"+name.replace(/[. ]/g, "_");
-					if(!$('#'+id).length) {
-						$('#boxes').append(`
-							<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='`+id+`'>
-								<div class='head clearfix'>
-									<div class='title'>`+name+`</div>
-									<div class='reload' title='Reload probe'>
-										<a href='javascript:triggerProbe("`+name+`")'>&#10227;</a>
-									</div>
-								</div>
-								<div class='error'></div>
-								<div class='content'/>
-							</div>`);
-					}
-
-					var tmp = "";
-					probe.probeSeverity = undefined;
-					if(probe.s > 0 && undefined !== probe.e) {
-						tmp += "<div class='error'>Probe failed with error: <pre>"+probe.e+"</pre>'";
-						probe.probeSeverity = 'invalid';
-					}
-
-					if('render' in probe) {
-						if(probe.render.type === 'table') {
-							tmp += renderTable(probe);
-						} else if(probe.render.type === 'lines') {
-							tmp += renderString(probe);
-						} else {
-							tmp += "<div class='error'>Fatal: unknown renderer type "+probe.render.type+"</div>";
-							probe.probeSeverity = 'invalid';
-						}
-					} else {
-						tmp = renderString(probe);
-					}
-
-					if(probe.probeSeverity === undefined)
-						$('.box#'+id)
-							.removeClass('problem')
-							.addClass('ok')
-							.attr('collapsed', $('.box#'+id).attr('autocollapse'))
-					else
-						$('.box#'+id)
-							.removeClass('ok')
-							.addClass('problem')
-							.addClass('severity_'+ probe.probeSeverity)
-							.attr('collapsed', $('.box#'+id).attr('forcecollapse'))
-
-					$('#'+id+' .content').html(tmp);
-
-					// Auto-collapse rendering
-					$('.box[collapsed=1] .content').hide();
-					$('.box[collapsed=0] .content').show();
-				});
-
-				$('.box .head .title').off().click(function() {
-					var box = $(this).parent().parent();
-
-					if(1 == box.attr('collapsed'))
-						box
-							.attr('collapsed', 0)
-							.attr('autocollapse', 0)
-							.attr('forcecollapse', 0)
-							.find('.content').show();
-					else
-						box
-							.attr('collapsed', 1)
-							.attr('autocollapse', 1)
-							.attr('forcecollapse', 1)
-							.find('.content').hide();
-				});
-
-				var list = document.querySelector('#boxes')
-				var result = [...list.children]
-					.sort((a,b)=>a.innerText>b.innerText?1:-1)
-					.map(node=>list.appendChild(node))
+			return $.getJSON("/api/" + name, {})
+			.done(function(data) {
+				callback(data);
 			})
-			.fail(function(data) {
-				console.log("failed to fetch data!");
+			.fail(function(j, t, e) {
+				if(errorcb)
+					errorcb(e);
+				else
+					error('Fetching API results for "'+name+'" failed!?<br/><br/>Exception: ' + e);
+			}).promise();
+		}
+
+		function probeErrorCb(e, probe, h) {
+			console.err(`probe Error: host=${h} probe=${probe} `+e);
+			// FIXME
+		}
+
+		function hostToId(h) {
+			return h.replace(/[^a-zA-Z0-9]/g, '');
+		}
+
+		function probeResultCb(probe, h, d) {
+			var hId = hostToId(h);
+			if(!$(`#${hId}`).length) {
+				$('#nodes').append(`<div id="${hId}" class='node'>
+						<div class='name'></div>
+						<div class='status'></div>
+						<div class='boxes'></div>
+				</div>`);
+			}
+			$(`#${hId}.node .name`).html(h);
+			$(`#${hId}.node .status`).html('connected');
+
+			var id = "box_"+hId+"_"+d.name.replace(/[. ]/g, "_");
+			if(!$(`#${id}`).length) {
+				$(`#${hId} .boxes`).append(`
+					<div class='box' collapsed='1' autocollapse='1' forcecollapse='0' id='`+id+`'>
+						<div class='head clearfix'>
+							<div class='title'>`+d.name+`</div>
+							<div class='reload' title='Reload probe'>
+								<a href='javascript:triggerProbe("`+d.name+`")'>&#10227;</a>
+							</div>
+						</div>
+						<div class='error'></div>
+						<div class='content'/>
+					</div>`);
+			}
+
+			var tmp = "";
+
+			if('render' in d) {
+				if(d.render.type === 'table') {
+					tmp += renderTable(d);
+				} else if(d.render.type === 'lines') {
+					tmp += renderString(d);
+				} else {
+					tmp += "<div class='error'>Fatal: unknown renderer type "+probe.render.type+"</div>";
+					probe.probeSeverity = 'invalid';
+				}
+			} else {
+				tmp = renderString(d);
+			}
+
+			if(d.probeSeverity === undefined)
+				$('.box#'+id)
+					.removeClass('problem')
+					.addClass('ok')
+					.attr('collapsed', $('.box#'+id).attr('autocollapse'))
+			else
+				$('.box#'+id)
+					.removeClass('ok')
+					.addClass('problem')
+					.addClass('severity_'+ d.probeSeverity)
+					.attr('collapsed', $('.box#'+id).attr('forcecollapse'))
+
+			$('#'+id+' .content').html(tmp);
+
+			// Auto-collapse rendering
+			$('.box[collapsed=1] .content').hide();
+			$('.box[collapsed=0] .content').show();
+
+
+			$('.box .head .title').off().click(function() {
+				var box = $(this).parent().parent();
+
+				if(1 == box.attr('collapsed'))
+					box
+						.attr('collapsed', 0)
+						.attr('autocollapse', 0)
+						.attr('forcecollapse', 0)
+						.find('.content').show();
+				else
+					box
+						.attr('collapsed', 1)
+						.attr('autocollapse', 1)
+						.attr('forcecollapse', 1)
+						.find('.content').hide();
 			});
+
+			var list = document.querySelector(`#${hId} .boxes`);
+			var result = [...list.children]
+				.sort((a,b)=>a.innerText>b.innerText?1:-1)
+				.map(node=>list.appendChild(node))
 		}
 
 		(function() {
-			update();
-			setInterval(function() {
-				update();
-			}, 2000);
+			$.getJSON("/api/hosts", {})
+			.done(function(d) {
+				$.each(d, function(i, h) {
+					pAPI.start(h, probeResultCb, probeErrorCb);
+				});
+			})
+			.fail(function(data) {
+				console.err("failed fetching /api/hosts! "+d);
+			})
 		})();
 	</script>
 </body>
