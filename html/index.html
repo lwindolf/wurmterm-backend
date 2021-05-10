@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <link rel="stylesheet" type='text/css' href='styles.css'/>
-<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="assets/jquery.js"></script>
 <script type="text/javascript" src="probeapi.js"></script>
 <title>WurmTerm</title>
 </head>
@@ -27,7 +27,6 @@
 				var re = new RegExp(severities[name]);
 				var matches = re.exec(text);
 				if(matches !== null) {
-					//console.log(text+re+" result: "+name);
 					matchResult = name;
 					return;
 				}
@@ -80,7 +79,7 @@
 				console.log("done /probe! "+JSON.stringify(d));
 			})
 			.fail(function(data) {
-				console.log("fail /probe! "+d);
+				console.err("fail /probe! "+d);
 			})
 		}
 
@@ -115,7 +114,6 @@
 
 		function probeResultCb(probe, h, d) {
 			var hId = hostToId(h);
-console.log(h);
 			if(!$(`#${hId}`).length) {
 				$('#nodes').append(`<div id="${hId}" class='node'>
 						<div class='name'></div>

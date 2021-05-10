@@ -24,11 +24,6 @@ var http = require("http"),
     StatefulProcessCommandProxy = require("stateful-process-command-proxy");
 const { exec } = require("child_process");
 
-var config = {
-    "static": {
-	"rootdir": "html"
-    }
-};
 var probes = require('./probes/default.json');
 
 process.on('uncaughtException', function(err) {
@@ -172,10 +167,13 @@ app.get('/api/probe/:probe/:host', function(req, res) {
    probe(req, res);
 });
 
-app.use(express.static(path.join(__dirname, config.static.rootdir)));
+app.use(express.static(path.join(__dirname, 'html')));
+app.use('/assets', [
+    express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist'))
+]);
 
 app.all('*', function(req, res) {
-   res.sendfile('index.html', { root: config.static.rootdir });
+   res.sendfile('index.html', { root: 'html' });
 });
 
 http.createServer(app).listen(8181);
