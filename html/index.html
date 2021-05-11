@@ -123,11 +123,22 @@
 		function resortBoxes(list) {
 			var result = [...list.children]
 				.sort(function (a,b) {
-					if($(a).attr('collapsed')>$(b).attr('collapsed'))
-						return 1;
-					if($(a).attr('collapsed')<$(b).attr('collapsed'))
-						return -1;
-					return (a.innerText>b.innerText)?1:-1;
+					var ac = 0, bc = 0;
+					if ($(a).hasClass('severity_critical'))
+						ac += 20;
+					if ($(a).hasClass('severity_warning'))
+						ac += 10;
+					if ($(b).hasClass('severity_critical'))
+						bc += 20;
+					if ($(b).hasClass('severity_warning'))
+						bc += 10;
+
+					if (a.innerText<b.innerText)
+						ac += 1;
+					else
+						bc += 1;
+
+					return (ac<bc?1:-1);
 				})
 				.map(node=>list.appendChild(node))
 		}
@@ -205,8 +216,6 @@
 				$(`.box#${id}`).removeClass('empty')
 				$(`.box#${id} .content`).html(tmp);
 			}
-
-
 
 			// Auto-collapse rendering
 			$(`.box#${id}[collapsed=1] .content`).hide();
