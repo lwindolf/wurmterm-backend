@@ -80,6 +80,9 @@ body {
     color: black;
     padding: 3px;
 }
+.box.collapsed .title:hover {
+    color: silver;
+}
 
 .box.empty .head {
     background: #557;
