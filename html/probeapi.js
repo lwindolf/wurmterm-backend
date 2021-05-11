@@ -1,4 +1,5 @@
 // vim: set ts=4 sw=4:
+/* jshint esversion: 6 */
 /* Probe API singleton, allowing one host being probed at a time.
    Manages auto-updates and probe dependency tree  */
 
@@ -30,7 +31,7 @@ console.log(`${host} - ${name} ${a.probes[name].localOnly}`);
 		if(host !== 'localhost' && a.probes[name].localOnly === 'True')
 			return;
 
-		if(undefined == a.hosts[host].probes[name])
+		if(undefined === a.hosts[host].probes[name])
 			a.hosts[host].probes[name] = {};
 
 		var p = a.hosts[host].probes[name];
