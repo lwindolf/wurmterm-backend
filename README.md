@@ -7,15 +7,17 @@ Linux Terminal helper with Service Auto-Discovery + Rendering Capabilities.
 To interactively start
 
     ./wurm
-   
-Our via .bashrc
-
-    source ./wurm
 
 ## Installation
 
     sudo apt-get install npm
     npm install
+    
+To automatically start WurmTerm with your first terminal opening add a line
+like the following to `.bashrc`
+
+    (cd <install path> && source ./wurm & )
+
 
 ## Host Wurm Tunneling
 
@@ -27,6 +29,7 @@ and will start run probes to the same nodes.
 
 Wurmterm assumes 
 
+- that you use bash
 - that it can connect to all those nodes without credentials
 - that you use `ssh <node|ip>` only and handle all private key switching in your SSH config
 - that it is always allowed to sudo (but won't complain if it does not succeed)

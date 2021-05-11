@@ -13,6 +13,24 @@ else
    nohup npm start >/dev/null 2>&1 &
 fi
 
+# try to connect any wait if needed
+(
+set +e
+timeout=1
+while [ 1 ]; do 
+	if exec 3<>/dev/tcp/localhost/$PORT; then
+		break
+	fi
+
+	sleep $timeout
+
+	if [ $timeout -lt 180 ]; then
+		timeout=$((timeout * 2))
+	fi
+done
+exec 3<&-
+exec 3>&-
+) 2>/dev/null
 
 # Always open the webpage when server was not yet running and when called
 # without being source (e.g. via .bash_rc)
