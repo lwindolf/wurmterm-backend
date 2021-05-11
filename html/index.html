@@ -124,6 +124,10 @@
 			var result = [...list.children]
 				.sort(function (a,b) {
 					var ac = 0, bc = 0;
+					if ($(a).attr('collapsed') !== "1")
+						ac += 40;
+					if ($(b).attr('collapsed') !== "1")
+						bc += 40;
 					if ($(a).hasClass('severity_critical'))
 						ac += 20;
 					if ($(a).hasClass('severity_warning'))
