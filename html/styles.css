@@ -55,6 +55,7 @@ body {
     position: relative;
     display: block;
     clear: both;
+    cursor: pointer;
 }
 
 .box .head .reload {
