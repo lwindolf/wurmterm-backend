@@ -1,4 +1,4 @@
-# wurmterm
+# WurmTerm 🐛
 
 Linux Terminal helper with Service Auto-Discovery + Rendering Capabilities.
 
@@ -11,10 +11,10 @@ To interactively start
 ## Installation
 
     sudo apt-get install npm
-    npm install
+    cd <source> && npm install
     
 To automatically start WurmTerm with your first terminal opening add a line
-like the following to `.bashrc`
+like the following to your `~/.bashrc`
 
     (cd <install path> && source ./wurm & )
 
