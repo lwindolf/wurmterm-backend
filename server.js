@@ -22,9 +22,11 @@ var http = require("http"),
     path = require("path"),
     app = express(),
     StatefulProcessCommandProxy = require("stateful-process-command-proxy");
+
 const { exec } = require("child_process");
 
 var probes = require('./probes/default.json');
+var proxies = {};
 
 process.on('uncaughtException', function(err) {
   // dirty catch of broken SSH pipes
@@ -32,6 +34,29 @@ process.on('uncaughtException', function(err) {
 });
 
 // Remote server probe API
+
+function get_history(request, response) {
+    try {
+	const cmd = `cat ~/.bash_history | awk '{if (\$1 == \"ssh\" && \$2 ~ /^[a-z0-9]/) {print \$2}}' | tail -50 | sort -u`;
+	exec(cmd, (error, stdout, stderr) => {
+	    if (error) {
+		response.writeHead(500, {'Content-Type': 'text/plain'});
+		response.end(`Error: failed to fetch SSH history`);
+	    } else {
+		var results = stdout.split(/\n/);
+                response.writeHead(200, {'Content-Type': 'application/json'});
+	        response.end(JSON.stringify(results
+		    .filter(s => s.length > 1)
+		));
+	        return;
+	    }
+	});
+    } catch(e) {
+	response.writeHead(501, {'Content-Type': 'text/plain'});
+	console.log(e);
+	response.end("Exception: "+JSON.stringify(e));
+    }
+}
 
 function get_hosts(request, response) {
 
@@ -68,9 +93,11 @@ function get_probes(request, response) {
    Object.keys(probes).forEach(function(probe) {
        var p = probes[probe];
        output[probe] = {
-           name     : p.name,
-           initial  : p.initial,
-           refresh  : p.refresh
+           name      : p.name,
+           initial   : p.initial,
+           refresh   : p.refresh,
+           local     : p.local,
+           localOnly : p.localOnly
        };
    });
    response.end(JSON.stringify(output));
@@ -89,7 +116,9 @@ function probe(request, response) {
 	   }
 
 	   var cmd = probes[probe].command;
-	   var proxy = new StatefulProcessCommandProxy(
+
+	   if(undefined === proxies[host]) {
+	      proxies[host] = new StatefulProcessCommandProxy(
 		{
 		  name: "proxy_"+host,
 		  max: 1,
@@ -117,9 +146,10 @@ function probe(request, response) {
 		  validateFunction: function(processProxy) {
 		      return processProxy.isValid();
 		  },
-	   });
+	     });
+           }
 
-	   proxy.executeCommands([cmd]).then(function(res) {
+	   proxies[host].executeCommands([cmd]).then(function(res) {
 		   response.writeHead(200, {'Content-Type': 'application/json'});
 
 		   var msg = {
@@ -154,6 +184,10 @@ function probe(request, response) {
 }
 
 // Routing
+
+app.get('/api/history', function(req, res) {
+   get_history(req, res);
+});
 
 app.get('/api/hosts', function(req, res) {
    get_hosts(req, res);

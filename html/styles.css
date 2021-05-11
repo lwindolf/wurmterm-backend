@@ -22,6 +22,16 @@ body {
     margin-bottom:12px;
 }
 
+.node.disconnected {
+    filter: grayscale(60%);
+}
+.node.disconnected .name {
+    color: silver;
+}
+.node.disconnected .name::after {
+    content: ' (disconnected)';
+}
+
 #nodes > div {
     width: 300px;
 }
@@ -29,10 +39,6 @@ body {
 .node .name {
     color:white;
     font-weight:bold;
-}
-
-.node .status {
-    font-style:italic;
 }
 
 #boxes {
@@ -82,13 +88,25 @@ body {
     background: #ccc;
 }
 .box.severity_critical .head {
-    background: red;
+    background: #ccc;
+}
+.box.severity_warning .title::before {
+    content: '⚠ '
+}
+.box.severity_critical .title::before {
+    content: '⚡ '
 }
 .box.severity_invalid .head {
     background: black;
     color: silver;
 }
 
+.box.collapsed.severity_warning .head {
+    background: yellow;
+}
+.box.collapsed.severity_critical .head {
+    background: red;
+}
 .box.collapsed .reload {
     display: none;
 }
@@ -123,4 +141,33 @@ span.severity_critical {
 span.severity_warning {
     background: yellow;
     color: black;
+}
+
+#footer {
+    background: #777;
+    border: 1px solid lightgray;
+    padding: 12px;
+    position: absolute;
+    bottom: 0px;
+}
+#history {
+    margin: 3px;
+    margin-block-start: 0;
+    padding-inline-start: 0;
+}
+.title {
+    color:  white;
+}
+#history li {
+    display:inline-block;
+    padding:3px;
+    margin-right:3px;
+    margin-bottom:3px;
+    background: #ddd;
+    color: black;
+}
+#history li:hover {
+    text-decoration: underline;
+    cursor: pointer;
+    color: white;
 }

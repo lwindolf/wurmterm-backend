@@ -16,6 +16,7 @@ function ProbeAPI() {
 		url: "/api/probes",
 		success: function(data) {
 			a.probes = data;
+			console.log(a.probes);
 		}
 	    // FIXME: error handling
 	});
@@ -24,6 +25,10 @@ function ProbeAPI() {
 	// Perform a given probe and call callback cb for result processing
 	this.probe = function(host, name, cb, errorCb) {
 		var a = this;
+console.log(`${host} - ${name} ${a.probes[name].localOnly}`);
+		// Never run exclusively local commands elsewhere automatically
+		if(host !== 'localhost' && a.probes[name].localOnly === 'True')
+			return;
 
 		if(undefined == a.hosts[host].probes[name])
 			a.hosts[host].probes[name] = {};
@@ -95,10 +100,6 @@ function ProbeAPI() {
 		$.each(this.probes, function(name, p) {
 			// On localhost run all local commands
 			if(this.host === 'localhost' && p.local !== 'True')
-			    return;
-
-			// Never run exclusively local commands elsewhere automatically
-			if(this.host !== 'localhost' && p.onlyLocal === 'True')
 			    return;
 
 			if(p.updating === false && p.refresh*1000 < now - p.timestamp)

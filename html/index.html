@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
 <head>
 <meta charset="UTF-8">
 <link rel="stylesheet" type='text/css' href='styles.css'/>
@@ -12,10 +12,21 @@
 		<h1>WurmTerm 🐛</h1>
 		<div id='nodes'>
 		</div>
+		<div id='footer'>
+			<div class='title'>Your SSH History (click to connect)</div>
+			<ul id='history'>
+			</ul>
+			<form id='hostForm'>
+				Or enter hostname:<br/>
+				<input id='hostEntry' type='text'/>
+				<input type='submit' value='Connect'/>
+			</form>
+		</div>
 	</div>
 
 	<script>
 		var hosts = {};
+		var extraHosts = [];		// list of hosts manually added
 		var pAPI = new ProbeAPI();
 
 		function multiMatch(text, severities) {
@@ -73,14 +84,8 @@
 			return res + "</table>";
 		}
 
-		function triggerProbe(name) {
-			$.getJSON("/probe/"+name, {}).
-			done(function(d) {
-				console.log("done /probe! "+JSON.stringify(d));
-			})
-			.fail(function(data) {
-				console.err("fail /probe! "+d);
-			})
+		function triggerProbe(host, name) {
+			pAPI.probe(host, name, probeResultCb, probeErrorCb);
 		}
 
 		function getAPI(name, callback, errorcb, params) {
@@ -104,8 +109,11 @@
 		}
 
 		function probeErrorCb(e, probe, h) {
-			console.err(`probe Error: host=${h} probe=${probe} `+e);
-			// FIXME
+			var hId = hostToId(h);
+			var id = "box_"+hId+"_"+probe.replace(/[. ]/g, "_");
+			addProbe(h, id, probe, probe);
+			$(`${id} .error`).html(e);
+			console.error(`probe Error: host=${h} probe=${probe} `+e);
 		}
 
 		function hostToId(h) {
@@ -124,26 +132,29 @@
 				.map(node=>list.appendChild(node))
 		}
 
-		function probeResultCb(probe, h, d) {
+		function addHost(h) {
+			pAPI.start(h, probeResultCb, probeErrorCb);
+
 			var hId = hostToId(h);
 			if(!$(`#${hId}`).length) {
-				$('#nodes').append(`<div id="${hId}" class='node'>
+				$('#nodes').append(`<div id="${hId}" class='node' data-host='${h}'>
 						<div class='name'></div>
-						<div class='status'></div>
 						<div class='boxes'></div>
 				</div>`);
 			}
 			$(`#${hId}.node .name`).html(h);
-			$(`#${hId}.node .status`).html('connected');
+			$(`#${hId}.node`).removeClass('disconnected');
+		}
 
-			var id = "box_"+hId+"_"+d.name.replace(/[. ]/g, "_");
+		function addProbe(h, id, probe, title) {
+			var hId = hostToId(h);
 			if(!$(`#${id}`).length) {
 				$(`#${hId} .boxes`).append(`
-					<div class='box collapsed' collapsed='1' autocollapse='1' forcecollapse='0' id='`+id+`'>
+					<div class='box collapsed' collapsed='1' autocollapse='1' forcecollapse='0' id='${id}'>
 						<div class='head clearfix'>
-							<div class='title'>`+d.name+`</div>
+							<div class='title'>${title}</div>
 							<div class='reload' title='Reload probe'>
-								<a href='javascript:triggerProbe("`+d.name+`")'>&#10227;</a>
+								<a href='javascript:triggerProbe("${h}","${probe}")'>&#10227;</a>
 							</div>
 						</div>
 						<div class='error'></div>
@@ -151,8 +162,13 @@
 					</div>`);
 			}
 
-			var tmp = "";
+		}
 
+		function probeResultCb(probe, h, d) {
+			var hId = hostToId(h);
+			var id = "box_"+hId+"_"+d.name.replace(/[. ]/g, "_");
+			var tmp = "";
+			addProbe(h, id, probe, d.name);
 			if('render' in d) {
 				if(d.render.type === 'table') {
 					tmp += renderTable(d);
@@ -222,16 +238,66 @@
 			resortBoxes($(`#${hId} .boxes`)[0]);
 		}
 
-		(function() {
+		function updateHosts() {
 			$.getJSON("/api/hosts", {})
 			.done(function(d) {
+				// Stop disconnected hosts
+				$('.node:not(.disconnected)').each(function(i, n) {
+					var h = $(n).data('host');
+					if(!d.includes(h) && !extraHosts.includes(h) && (h !== 'localhost')) {
+						console.log('stopping '+h);
+						pAPI.stop(h);
+						$(n).addClass('disconnected');
+					}
+				});
+				// Start newly connected hosts
 				$.each(d, function(i, h) {
-					pAPI.start(h, probeResultCb, probeErrorCb);
+					var hId = hostToId(h);
+					if(!$(`.node#${hId}`).length) {
+						addHost(h);
+					}
 				});
 			})
 			.fail(function(data) {
-				console.err("failed fetching /api/hosts! "+d);
+				console.error("failed fetching /api/hosts! "+d);
 			})
+
+			setTimeout(function () {
+				updateHosts();
+			}, 3000);
+		}
+
+		function addHistory() {
+			$.getJSON("/api/history", {})
+			.done(function(d) {
+				$.each(d, function(i, h) {
+					$('#history').append(`<li>${h}</li>`);
+				});
+			});
+			$('ul#history').on('click', 'li', function() {
+				var h = $(this).text();
+				console.log(`manually started ${h}`);
+				extraHosts.push(h);
+				addHost(h);
+			});
+
+			$('#hostForm').submit(function(event) {
+				var h = $('#hostEntry').val();
+				if(h === "")
+					return;
+
+				console.log(`manually started ${h}`);
+				extraHosts.push(h);
+				addHost(h);
+				event.preventDefault();
+				return true;
+			});
+
+		}
+
+		(function() {
+			updateHosts();
+			addHistory();
 		})();
 	</script>
 </body>

@@ -143,11 +143,19 @@
         "matches": "/dev/md",
         "render" : { "type" : "lines" }
    },
-   "MySQL Databases": {
+   "Postgres DBs": {
+        "command": "pgrep -fa 'postgres:.*\\[' | sed 's/^[0-9]* //' | sort -u",
+        "if"     : "netstat",
+        "matches": "postgresql",
+	"type"   : "service",
+        "render" : { "type" : "lines" }
+   },
+   "MySQL DBs": {
         "command": "echo show databases\\; | sudo -n mysql --defaults-file=/etc/mysql/debian.cnf | egrep -v '^(Database|.*_schema|mysql|sys)\\$'",
         "if"     : "netstat",
         "matches": "mysqld",
-	"type"   : "service"
+	"type"   : "service",
+        "render" : { "type" : "lines" }
    },
    "MySQL Status": {
         "command": "echo status |sudo -n mysql --defaults-file=/etc/mysql/debian.cnf |grep Threads",
