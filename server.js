@@ -201,13 +201,13 @@ app.get('/api/probe/:probe/:host', function(req, res) {
    probe(req, res);
 });
 
-app.use(express.static(path.join(__dirname, 'html')));
-app.use('/assets', [
+app.use(express.static(path.join(__dirname, 'assets')));
+app.use('/lib/jquery', [
     express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist'))
 ]);
 
 app.all('*', function(req, res) {
-   res.sendfile('index.html', { root: 'html' });
+   res.sendfile('index.html', { root: 'assets' });
 });
 
 http.createServer(app).listen(8181);

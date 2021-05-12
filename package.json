@@ -14,6 +14,6 @@
         "stateful-process-command-proxy": "~1.0.1"
     },
     "scripts": {
-        "test": "jshint *.js html/*.js"
+        "test": "jshint *.js assets/js/*.js"
     }
 }
