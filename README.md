@@ -2,6 +2,12 @@
 
 Linux Terminal helper with Service Auto-Discovery + Rendering Capabilities.
 
+![Screenshot WurmTerm](https://user-images.githubusercontent.com/3315368/118046621-dde32e00-b379-11eb-8400-7942eb401e86.png)
+
+WurmTerm watches over the state of servers you are connected to via SSH sessions
+and alerts you of issues detected and provides you with an overview of detected 
+services (web servers, databases, RAID ...)
+
 ## Usage
 
 To interactively start
