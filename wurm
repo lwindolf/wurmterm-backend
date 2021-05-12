@@ -17,7 +17,7 @@ fi
 (
 set +e
 timeout=1
-while [ 1 ]; do 
+while true; do
 	if exec 3<>/dev/tcp/localhost/$PORT; then
 		break
 	fi
