@@ -347,7 +347,7 @@
            "type" : "lines",
            "split": "\\n",
            "severity": {
-               "warning" : "security updates"
+               "warning" : "^[^0].*security updates"
            }
        }
    },

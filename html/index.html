@@ -167,7 +167,7 @@
 				$(`#${hId} .boxes`).append(`
 					<div class='box collapsed' collapsed='1' autocollapse='1' forcecollapse='0' id='${id}'>
 						<div class='head clearfix'>
-							<div class='title'>${title}</div>
+							<div class='title'><span class='emoji'></span>${title}</div>
 							<div class='reload' title='Reload probe'>
 								<a href='javascript:triggerProbe("${h}","${probe}")'>&#10227;</a>
 							</div>
@@ -199,7 +199,8 @@
 
 			if(d.probeSeverity === undefined)
 				$('.box#'+id)
-					.removeClass('problem')
+					.removeClass('severity_warning')
+					.removeClass('severity_critical')
 					.addClass('ok')
 					.addClass('collapsed')
 					.removeClass('uncollapsed')
@@ -207,7 +208,6 @@
 			else
 				$('.box#'+id)
 					.removeClass('ok')
-					.addClass('problem')
 					.addClass('severity_'+ d.probeSeverity)
 					.addClass('uncollapsed')
 					.removeClass('collapsed')

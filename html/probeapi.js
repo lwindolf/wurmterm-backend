@@ -26,7 +26,7 @@ function ProbeAPI() {
 	// Perform a given probe and call callback cb for result processing
 	this.probe = function(host, name, cb, errorCb) {
 		var a = this;
-console.log(`${host} - ${name} ${a.probes[name].localOnly}`);
+
 		// Never run exclusively local commands elsewhere automatically
 		if(host !== 'localhost' && a.probes[name].localOnly === 'True')
 			return;

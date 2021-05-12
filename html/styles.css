@@ -11,6 +11,17 @@ body {
     display: table;
 }
 
+.emoji {
+    vertical-align: middle;
+}
+
+img.emojione {
+    margin: 0px !important;
+    display: inline !important;
+	        
+    height: auto;
+}
+
 #nodes {
 	display: flex;
 	flex-direction: row;
@@ -94,10 +105,10 @@ body {
 .box.severity_critical .head {
     background: #ccc;
 }
-.box.severity_warning .title::before {
+.box.severity_warning .emoji:before {
     content: '⚠ '
 }
-.box.severity_critical .title::before {
+.box.severity_critical .emoji:before {
     content: '⚡ '
 }
 .box.severity_invalid .head {
