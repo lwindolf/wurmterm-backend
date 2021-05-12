@@ -6,7 +6,14 @@ Linux Terminal helper with Service Auto-Discovery + Rendering Capabilities.
 
 WurmTerm watches over the state of servers you are connected to via SSH sessions
 and alerts you of issues detected and provides you with an overview of detected 
-services (web servers, databases, RAID ...)
+services (web servers, databases, RAID ...).
+
+This allows you to keep WurmTerm open as a browser tab alongside you terminal and
+it will notify you about issues on hosts you "travel" to faster than you could debug
+issues yourself. It will often uncover problem you do not notice at all.
+
+Probing does not happen via brute-force, but depending on services detected via
+a `netstat`/`ss` listing.
 
 ## Usage
 
