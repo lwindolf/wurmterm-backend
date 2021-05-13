@@ -18,8 +18,47 @@ body {
 img.emojione {
     margin: 0px !important;
     display: inline !important;
-	        
     height: auto;
+}
+
+#visual {
+    display: none;
+    height: 33%;
+    border: 1px solid silver;
+    background: white;
+    margin-bottom:12px;
+}
+
+#visual .label {
+    background: white;
+}
+
+#visual .node rect {
+    stroke: #999;
+    fill: #fff;
+    stroke-width: 1.5px;
+}
+#visual .edgePath path {
+    stroke: #333;
+    stroke-width: 1.5px;
+}
+#visual .local > rect {
+    fill: #ffc;
+    stroke-width: 2px;
+}
+#visual .local_unused > rect {
+    fill: #fff;
+    stroke-width: 2px;
+}
+#visual .null > rect, .null > foreignobject {
+    stroke-width: 0;
+}
+#visual .previousNode {
+    background: #ccf;
+}
+#visual a.resolve {
+    color:brown;
+    text-decoration:none;
 }
 
 #nodes {
@@ -28,18 +67,18 @@ img.emojione {
 	flex-wrap: wrap;
 }
 
-.node {
+#nodes .node {
     margin-right:12px;
     margin-bottom:12px;
 }
 
-.node.disconnected {
+#nodes .node.disconnected {
     filter: grayscale(60%);
 }
-.node.disconnected .name {
+#nodes .node.disconnected .name {
     color: silver;
 }
-.node.disconnected .name::after {
+#nodes .node.disconnected .name::after {
     content: ' (disconnected)';
 }
 
@@ -47,9 +86,10 @@ img.emojione {
     width: 300px;
 }
 
-.node .name {
+#nodes .node .name {
     color:white;
     font-weight:bold;
+    cursor:pointer;
 }
 
 #boxes {
@@ -162,7 +202,7 @@ span.severity_warning {
     background: #777;
     border: 1px solid lightgray;
     padding: 12px;
-    position: absolute;
+    position: relative;
     bottom: 0px;
 }
 #history {

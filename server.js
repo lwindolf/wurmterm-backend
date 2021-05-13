@@ -202,9 +202,9 @@ app.get('/api/probe/:probe/:host', function(req, res) {
 });
 
 app.use(express.static(path.join(__dirname, 'assets')));
-app.use('/lib/jquery', [
-    express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist'))
-]);
+app.use('/lib/jquery', [ express.static(path.join(__dirname, 'node_modules', 'jquery', 'dist')) ]);
+app.use('/lib/jquery', [ express.static(path.join(__dirname, 'node_modules', 'd3', 'dist')) ]);
+app.use('/lib/jquery', [ express.static(path.join(__dirname, 'node_modules', 'dagre-d3', 'dist')) ]);
 
 app.all('*', function(req, res) {
    res.sendfile('index.html', { root: 'assets' });

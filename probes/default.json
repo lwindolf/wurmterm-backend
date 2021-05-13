@@ -39,7 +39,7 @@
    },
    "netstat-a": {
         "name"   : "All Connections",
-        "command": "sudo -n netstat -tlpa --numeric-hosts 2>/dev/null | egrep -v '^(Active Internet|Proto)'",
+        "command": "(sudo -n netstat -tulpan --numeric-hosts 2>/dev/null || netstat -tulan 2>/dev/null || sudo -n ss -etupn 2>/dev/null || ss -etunp 2>/dev/null) | egrep -v '^(Active Internet|Proto)'",
         "refresh": 30
    },
    "apache": {

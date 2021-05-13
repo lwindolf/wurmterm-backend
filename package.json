@@ -8,6 +8,8 @@
         "url": "https://github.com/lwindolf/wurmterm.git"
     },
     "dependencies": {
+        "d3": "^6.7.0",
+        "dagre-d3": "^0.6.4",
         "express": ">=4.5.0",
         "jquery": ">=3.6.0",
         "promise": "~8.0.0",
