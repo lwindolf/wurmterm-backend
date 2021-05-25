@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" type='text/css' href='styles.css'/>
 <script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
-<script type="text/javascript" src="lib/jquery/d3.min.js"></script>
-<script type="text/javascript" src="lib/jquery/dagre-d3.min.js"></script>
+<script type="text/javascript" src="lib/d3/d3.min.js"></script>
+<script type="text/javascript" src="lib/dagre-d3/dagre-d3.min.js"></script>
 <script type="text/javascript" src="js/probeapi.js"></script>
 <script type="text/javascript">
 var renderers = {};
@@ -96,26 +96,6 @@ var renderers = {};
 			pAPI.probe(host, name, probeResultCb, probeErrorCb);
 		}
 
-		function getAPI(name, callback, errorcb, params) {
-			if(undefined !== params) {
-				name += "?" + params.map(function(obj) {
-					var k = Object.keys(obj)[0];
-					return k + "=" + obj[k];
-				}).join("&");
-			}
-
-			return $.getJSON("/api/" + name, {})
-			.done(function(data) {
-				callback(data);
-			})
-			.fail(function(j, t, e) {
-				if(errorcb)
-					errorcb(e);
-				else
-					error('Fetching API results for "'+name+'" failed!?<br/><br/>Exception: ' + e);
-			}).promise();
-		}
-
 		function probeErrorCb(e, probe, h) {
 			var hId = hostToId(h);
 			var id = "box_"+hId+"_"+probe.replace(/[. ]/g, "_");
@@ -163,6 +143,7 @@ var renderers = {};
 
 			try {
 				pAPI.probe(host, 'netstat-a', function(probe, h, d) {
+				console.log(`netmap result ${d} `);
 					var r = new renderers.netmap();
 					r.render('#visual', d.stdout);
 				}, function(e, probe, h) {
@@ -213,9 +194,9 @@ var renderers = {};
 
 		function probeResultCb(probe, h, d) {
 			var hId = hostToId(h);
-			var id = "box_"+hId+"_"+d.name.replace(/[. ]/g, "_");
+			var id = "box_"+hId+"_"+d.probe.replace(/[. ]/g, "_");
 			var tmp = "";
-			addProbe(h, id, probe, d.name);
+			addProbe(h, id, probe, d.probe);
 			if('render' in d) {
 				if(d.render.type === 'table') {
 					tmp += renderTable(d);

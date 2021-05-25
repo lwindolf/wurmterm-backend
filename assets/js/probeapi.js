@@ -17,11 +17,35 @@ function ProbeAPI() {
 		url: "/api/probes",
 		success: function(data) {
 			a.probes = data;
-			console.log(a.probes);
 		}
 	    // FIXME: error handling
 	});
 	a.hosts = {};
+	a.ws = new WebSocket('ws://localhost:8181/');
+	a.ws.onmessage = function(e) {
+		try {
+			var d = JSON.parse(e.data);
+
+			if(undefined === d.error) {
+				// Always trigger follow probes, serialization is done in backend
+				for(var n in d.next) {
+					a.ws.send(`${d.host}:::${d.next[n]}`);
+				}
+				var p = a.hosts[d.host].probes[d.probe];
+				p.updating = false;
+				p.timestamp = Date.now();
+				p.cb(d.probe, d.host, d);
+			} else {
+			        p.errorCb(d.e, d.probe, d.host);
+			}
+		} catch(ex) {
+			console.log(`Exception: ${ex}\nMessage: ${JSON.stringify(e)}`);
+		}
+	};
+
+	this.getProbeByName = function(name) {
+	    return a.probes[name];
+	}
 
 	// Perform a given probe and call callback cb for result processing
 	this.probe = function(host, name, cb, errorCb) {
@@ -47,25 +71,7 @@ function ProbeAPI() {
 			p.errorCb = errorCb;
 		}
 
-		getAPI('probe/'+name+'/'+host, function(res) {
-		        // FIXME: check actual response code here!
-			var p = a.hosts[host].probes[name];
-			p.updating = false;
-			p.timestamp = Date.now();
-
-			// Always trigger follow probes, serialization is done in backend
-			for(var n in res.next) {
-				a.probe(host, res.next[n], cb);
-			}
-
-			if(undefined !== cb)
-				cb(name, host, res);
-		}, function(e) {
-			// FIXME: use a promise instead
-			p.updating = false;
-			p.timestamp = Date.now();
-			errorCb(e, name, host);
-		});
+		a.ws.send(`${host}:::${name}`);
 	};
 
 	// Triggers the initial probes, all others will be handled in the

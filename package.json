@@ -13,7 +13,8 @@
         "express": ">=4.5.0",
         "jquery": ">=3.6.0",
         "promise": "~8.0.0",
-        "stateful-process-command-proxy": "~1.0.1"
+        "stateful-process-command-proxy": "~1.0.1",
+        "websocket": "^1.0.34"
     },
     "scripts": {
         "test": "jshint *.js assets/js/*.js"
