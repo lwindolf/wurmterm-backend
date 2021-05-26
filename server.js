@@ -120,7 +120,7 @@ function probeWS(connection, host, probe) {
 		//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
 		},
 		processCommand: ((host === 'localhost')?'/bin/bash':'/usr/bin/ssh'),
-		processArgs:  ((host === 'localhost')?[]:[host]),
+		processArgs:  ((host === 'localhost')?[]:['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=publickey', host]),
 		processRetainMaxCmdHistory : 0,
 		processInvalidateOnRegex : {
 		    'stderr':[{regex:'.*error.*',flags:'ig'}]
