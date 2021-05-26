@@ -36,6 +36,7 @@ function ProbeAPI() {
 				p.timestamp = Date.now();
 				p.cb(d.probe, d.host, d);
 			} else {
+				var p = a.hosts[d.host].probes[d.probe];
 			        p.errorCb(d.e, d.probe, d.host);
 			}
 		} catch(ex) {
@@ -45,7 +46,7 @@ function ProbeAPI() {
 
 	this.getProbeByName = function(name) {
 	    return a.probes[name];
-	}
+	};
 
 	// Perform a given probe and call callback cb for result processing
 	this.probe = function(host, name, cb, errorCb) {

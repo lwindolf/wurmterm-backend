@@ -107,7 +107,7 @@ function get_probes(request, response) {
 function probeWS(connection, host, probe) {
     try {
 	if(!(probe in probes)) {
-		return {host: host, probe: probe, error:'No such probe'}
+		return {host: host, probe: probe, error:'No such probe'};
 	}
 	var cmd = probes[probe].command;
 	if(undefined === proxies[host]) {
@@ -155,11 +155,11 @@ function probeWS(connection, host, probe) {
 	    return;
 	}).catch(function(error) {
 	    done(e);
-	    return {host: host, probe: probe, error:e}
+	    return {host: host, probe: probe, error:e};
 	});
     } catch(e) {
 	done(e);
-        return {host: host, probe: probe, error:e}
+        return {host: host, probe: probe, error:e};
     }
 }
 
