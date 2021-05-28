@@ -107,7 +107,7 @@ function get_probes(request, response) {
 function probeWS(connection, host, probe) {
     try {
 	if(!(probe in probes)) {
-		return {host: host, probe: probe, error:'No such probe'}
+		return {host: host, probe: probe, error:'No such probe'};
 	}
 	var cmd = probes[probe].command;
 	if(undefined === proxies[host]) {
@@ -120,7 +120,7 @@ function probeWS(connection, host, probe) {
 		//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
 		},
 		processCommand: ((host === 'localhost')?'/bin/bash':'/usr/bin/ssh'),
-		processArgs:  ((host === 'localhost')?[]:[host]),
+		processArgs:  ((host === 'localhost')?[]:['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=publickey', host]),
 		processRetainMaxCmdHistory : 0,
 		processInvalidateOnRegex : {
 		    'stderr':[{regex:'.*error.*',flags:'ig'}]
@@ -155,11 +155,11 @@ function probeWS(connection, host, probe) {
 	    return;
 	}).catch(function(error) {
 	    done(e);
-	    return {host: host, probe: probe, error:e}
+	    return {host: host, probe: probe, error:e};
 	});
     } catch(e) {
 	done(e);
-        return {host: host, probe: probe, error:e}
+        return {host: host, probe: probe, error:e};
     }
 }
 

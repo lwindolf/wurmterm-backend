@@ -25,29 +25,37 @@ function ProbeAPI() {
 	a.ws.onmessage = function(e) {
 		try {
 			var d = JSON.parse(e.data);
+			var p = a.hosts[d.host].probes[d.probe];
 
-			if(undefined === d.error) {
-				var p = a.hosts[d.host].probes[d.probe];
-				console.log(`result: ${d.host} ${d.probe} ${p}`);
+			// FIXME: Introduce message types
+			if(undefined === p) {
+				console.error(`Message misses probe info or does not match known probe!`);
+			} else {
 				p.updating = false;
 				p.timestamp = Date.now();
-				p.cb(d.probe, d.host, d);
+				if(undefined === d.error) {
+					// Always trigger follow probes, serialization is done in backend
+					for(var n in d.next) {
+						a.ws.send(`${d.host}:::${d.next[n]}`);
+					}
+					p.cb(d.probe, d.host, d);
 
-				// Always trigger follow probes, serialization is done in backend
-				for(var n in d.next) {
-					a.probe(d.host, d.next[n], p.cb, p.errorCb);
+					// Always trigger follow probes, serialization is done in backend
+					for(var n in d.next) {
+						a.probe(d.host, d.next[n], p.cb, p.errorCb);
+					}
+				} else {
+				        p.errorCb(d.e, d.probe, d.host);
 				}
-			} else {
-			        p.errorCb(d.e, d.probe, d.host);
 			}
 		} catch(ex) {
-			console.log(`Exception: ${ex}\nMessage: ${JSON.stringify(e)}`);
+			console.error(`Exception: ${ex}\nMessage: ${JSON.stringify(e)}`);
 		}
 	};
 
 	this.getProbeByName = function(name) {
 	    return a.probes[name];
-	}
+	};
 
 	// Perform a given probe and call callback cb for result processing
 	this.probe = function(host, name, cb, errorCb) {
