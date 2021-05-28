@@ -27,14 +27,16 @@ function ProbeAPI() {
 			var d = JSON.parse(e.data);
 
 			if(undefined === d.error) {
-				// Always trigger follow probes, serialization is done in backend
-				for(var n in d.next) {
-					a.ws.send(`${d.host}:::${d.next[n]}`);
-				}
 				var p = a.hosts[d.host].probes[d.probe];
+				console.log(`result: ${d.host} ${d.probe} ${p}`);
 				p.updating = false;
 				p.timestamp = Date.now();
 				p.cb(d.probe, d.host, d);
+
+				// Always trigger follow probes, serialization is done in backend
+				for(var n in d.next) {
+					a.probe(d.host, d.next[n], p.cb, p.errorCb);
+				}
 			} else {
 			        p.errorCb(d.e, d.probe, d.host);
 			}

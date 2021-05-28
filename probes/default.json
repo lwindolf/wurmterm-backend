@@ -229,6 +229,19 @@
             }
         }
    },
+   "Ceph Health": {
+	"command": "sudo ceph health",
+	"if"     : "netstat",
+	"matches": "ceph-mon",
+	"type"   : "service",
+	"render" : {
+             "type" : "lines",
+             "severity": {
+                "critical" : "CRIT",
+                "warning"  : "WARN"
+            }
+	}
+   },
    "Zookeeper": {
         "command": "echo dump | nc localhost 2181",
         "refresh": 60,

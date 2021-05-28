@@ -97,14 +97,14 @@ var renderers = {};
 		}
 
 		function probeErrorCb(e, probe, h) {
-			var hId = hostToId(h);
+			var hId = strToId(h);
 			var id = "box_"+hId+"_"+probe.replace(/[. ]/g, "_");
 			addProbe(h, id, probe, probe);
 			$(`${id} .error`).html(e);
 			console.error(`probe Error: host=${h} probe=${probe} ${e}`);
 		}
 
-		function hostToId(h) {
+		function strToId(h) {
 			return h.replace(/[^a-zA-Z0-9]/g, '');
 		}
 
@@ -159,7 +159,7 @@ var renderers = {};
 		function addHost(h) {
 			pAPI.start(h, probeResultCb, probeErrorCb);
 
-			var hId = hostToId(h);
+			var hId = strToId(h);
 			if(!$(`#${hId}`).length) {
 				$('#nodes').append(`<div id="${hId}" class='node' data-host='${h}'>
 						<div class='name'></div>
@@ -175,7 +175,7 @@ var renderers = {};
 		}
 
 		function addProbe(h, id, probe, title) {
-			var hId = hostToId(h);
+			var hId = strToId(h);
 			if(!$(`#${id}`).length) {
 				$(`#${hId} .boxes`).append(`
 					<div class='box collapsed' collapsed='1' autocollapse='1' forcecollapse='0' id='${id}'>
@@ -193,8 +193,8 @@ var renderers = {};
 		}
 
 		function probeResultCb(probe, h, d) {
-			var hId = hostToId(h);
-			var id = "box_"+hId+"_"+d.probe.replace(/[. ]/g, "_");
+			var hId = strToId(h);
+			var id = "box_"+hId+"_"+strToId(d.probe);
 			var tmp = "";
 			addProbe(h, id, probe, d.probe);
 			if('render' in d) {
@@ -278,7 +278,7 @@ var renderers = {};
 				});
 				// Start newly connected hosts
 				$.each(d, function(i, h) {
-					var hId = hostToId(h);
+					var hId = strToId(h);
 					if(!$(`.node#${hId}`).length) {
 						addHost(h);
 					}
