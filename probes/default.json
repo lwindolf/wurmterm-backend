@@ -126,7 +126,7 @@
         "render" : { "type" : "lines" }
    },
    "df": {
-        "command": "df -hl -x tmpfs",
+        "command": "df -hl -x tmpfs -x squashfs",
         "initial": "True",
         "render" : {
              "type" : "table",
