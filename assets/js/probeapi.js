@@ -41,7 +41,7 @@ function ProbeAPI() {
 					p.cb(d.probe, d.host, d);
 
 					// Always trigger follow probes, serialization is done in backend
-					for(var n in d.next) {
+					for(n in d.next) {
 						a.probe(d.host, d.next[n], p.cb, p.errorCb);
 					}
 				} else {
