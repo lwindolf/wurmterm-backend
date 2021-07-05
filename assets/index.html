@@ -11,12 +11,22 @@
 var renderers = {};
 </script>
 <script type="text/javascript" src="js/renderer/netmap.js"></script>
+<script type="text/javascript" src="js/renderer/perf-flamegraph.js"></script>
 <title>WurmTerm</title>
 </head>
 <body>
 	<div class='main'>
 		<h1>WurmTerm 🐛</h1>
-		<div id='visual'>
+		<div id='visualContainer'>
+			Visualization
+			<select id='renderer'>
+				<option value='netmap'>netmap</option>
+				<option value='perfFlameGraph'>perf flamegraph</option>
+			</select>
+			Host
+			<span id='visualizedHost'></span>
+			<div id='visual'>
+			</div>
 		</div>
 		<div id='nodes'>
 		</div>
@@ -135,24 +145,18 @@ var renderers = {};
 				.map(node=>list.appendChild(node))
 		}
 
-		function visualizeHost(host) {
-			// For now we only support netstat rendering
-			$('#visual').show();
-			$('#visual').height(600);
-			$('#visual').html('<i>Loading connections...</i>');
-
+		function visualizeHost(host, renderer) {
+			$('#visualContainer').show();
+			$('#visualizedHost').html(host);
+			$('#renderer').val(renderer);
+			$('#visual').empty().height(600);
+console.log("rend="+renderer);
 			try {
-				pAPI.probe(host, 'netstat-a', function(probe, h, d) {
-				console.log(`netmap result ${d} `);
-					var r = new renderers.netmap();
-					r.render('#visual', d.stdout);
-				}, function(e, probe, h) {
-					$('#visual').html('ERROR: Fetching data failed!');
-					console.error(`probe Error: host=${h} probe=${probe} ${e}`);
-				});
+				var r = new renderers[renderer]();
+				r.render(pAPI, '#visual', host);
 			} catch(e) {
 				$('#visual').html('ERROR: Rendering failed!');
-				console.error(`render Error: host=${h} ${e}`);
+				console.error(`render Error: host=${host} ${e}`);
 			}
 		}
 
@@ -170,7 +174,7 @@ var renderers = {};
 			$(`#${hId}.node`).removeClass('disconnected');
 
 			$('.node .name').on('click', function() {
-				visualizeHost($(this).parent().data('host'));
+				visualizeHost($(this).parent().data('host'), 'netmap');
 			});
 		}
 
@@ -285,7 +289,7 @@ var renderers = {};
 				});
 			})
 			.fail(function(data) {
-				console.error("failed fetching /api/hosts! "+d);
+				console.error("failed fetching /api/hosts! "+data);
 			})
 
 			setTimeout(function () {
@@ -318,12 +322,15 @@ var renderers = {};
 				event.preventDefault();
 				return true;
 			});
-
 		}
 
 		(function() {
 			updateHosts();
 			addHistory();
+
+			$('#renderer').on('change', function() {
+				visualizeHost($('#visualizedHost').text(), $(this).val());
+			});
 		})();
 	</script>
 </body>

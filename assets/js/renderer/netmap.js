@@ -1,4 +1,4 @@
-// vim: set ts=4 sw=4: 
+// vim: set ts=4 sw=4:
 /* IPv4 only netmap renderer
 
    A view showing per-service connections for a single host in a
@@ -130,7 +130,7 @@ renderers.netmap.prototype.updateGraph = function() {
 		g.setEdge(l.source, l.target, props);
 	});
 
-	try {
+	try {TypeError
 		var render = new dagreD3.render();
 		render(nodeArea, g);
 	} catch(e) {
@@ -261,20 +261,27 @@ renderers.netmap.prototype.addHost = function(data) {
 	}
 }
 
-renderers.netmap.prototype.render = function(id, input) {
-	var data = this.parse(input);
+renderers.netmap.prototype.render = function(pAPI, id, host) {
+	var r = this;
 
-	if(0 === data.results.length) {
-		$(id).html(`<h3>There are currently no connections on this host!</h3><p>Connection data:</p><pre>${
-			input.replace(/&/g, "&amp;")
-				.replace(/</g, "&lt;")
-				.replace(/>/g, "&gt;")
-				.replace(/"/g, "&quot;")
-			.replace(/'/g, "&#039;")
-		}</pre>`);
-		return;
-	}
+	$(id).html('<i>Loading connections...</i>');
 
-	$(id).html('<svg id="netmap"/>');
-	this.addHost(data);
+	pAPI.probe(host, 'netstat-a', function(probe, h, input) {
+		var data = r.parse(input.stdout);
+		if(0 === data.results.length) {
+			$(id).html(`<h3>There are currently no connections on this host!</h3><p>Connection data:</p><pre>${
+				input.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#039;")
+			}</pre>`);
+			return;
+		}
+		$(id).html('<svg id="netmap"/>');
+		r.addHost(data);
+	}, function(e, probe, h) {
+		$(id).html('ERROR: Fetching connection data failed!');
+		console.error(`probe Error: host=${h} probe=${probe} ${e}`);
+	});
 };

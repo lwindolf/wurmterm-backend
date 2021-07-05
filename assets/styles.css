@@ -21,12 +21,19 @@ img.emojione {
     height: auto;
 }
 
-#visual {
+#visualizedHost {
+    font-weight: bold;
+    color: white;
+}
+#visualContainer {
     display: none;
+}
+#visual {
     height: 33%;
     border: 1px solid silver;
     background: white;
-    margin-bottom:12px;
+    margin-bottom: 12px;
+    margin-top: 6px;
 }
 
 #visual .label {
@@ -59,6 +66,12 @@ img.emojione {
 #visual a.resolve {
     color:brown;
     text-decoration:none;
+}
+
+.rendererForm {
+    padding:12px;
+    background: #eee;
+    color: black;
 }
 
 #nodes {

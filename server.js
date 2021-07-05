@@ -20,6 +20,7 @@
 const http = require("http"),
       express = require("express"),
       path = require("path"),
+      fs = require('fs'),
       app = express(),
       StatefulProcessCommandProxy = require("stateful-process-command-proxy"),
       WebSocketServer = require('websocket').server;
@@ -28,6 +29,7 @@ const { exec } = require("child_process");
 
 var probes = require('./probes/default.json');
 var proxies = {};
+var filters = {};
 
 process.on('uncaughtException', function(err) {
   // dirty catch of broken SSH pipes
@@ -98,14 +100,61 @@ function get_probes(request, response) {
    Object.keys(probes).forEach(function(probe) {
        var p = probes[probe];
        output[probe] = {
-           name      : p.name,
-           initial   : p.initial,
-           refresh   : p.refresh,
-           local     : p.local,
-           localOnly : p.localOnly
+           name        : p.name,
+           initial     : p.initial,
+           refresh     : p.refresh,
+           local       : p.local,
+           localOnly   : p.localOnly,
+           localFilter : p.localFilter
        };
    });
    response.end(JSON.stringify(output));
+}
+
+function runFilter(connection, msg) {
+    // Use only a single file here as we allow only one filter run at a time below
+    var tmpfile = '/tmp/wurmterm_localhost_filter';
+    fs.writeFile(tmpfile, msg.stdout, function (err) {
+        if (err) {
+	    console.log(err);
+	    msg.stdout = "";
+	    msg.stderr = "Local filter execution failed, writing temporary file failed!";
+            connection.sendUTF(JSON.stringify(msg));
+        }
+    });
+
+    if(undefined === proxies[':localhost_filter']) {
+        proxies[':localhost_filter'] = new StatefulProcessCommandProxy({
+	    name: ':localhost_filter',
+	    max: 1,
+	    min: 1,
+	    idleTimeoutMS: 60000,
+	    logFunction: function(severity,origin,msg) {
+		//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
+	    },
+	    processCommand: "/bin/bash",
+	    processArgs: [],
+	    processRetainMaxCmdHistory : 0,
+	    processInvalidateOnRegex : {
+	    //'stderr':[{regex:'.*error.*',flags:'ig'}]
+	    },
+	    processCwd : './',
+	    processUid : null,
+	    processGid : null,
+	    initCommands : ['LANG=C;echo'],	// to catch banners and pseudo-terminal warnings
+	    validateFunction: function(processProxy) {
+	        return processProxy.isValid();
+	    },
+        });
+    }
+    proxies[':localhost_filter'].executeCommands([
+	`cat ${tmpfile} | ${probes[msg.probe].localFilter}`,
+	`rm ${tmpfile}`
+    ]).then(function(res) {
+	msg.stdout = res[0].stdout;
+	msg.stderr = res[0].stderr;
+        connection.sendUTF(JSON.stringify(msg));
+    });
 }
 
 function probeWS(connection, host, probe) {
@@ -113,7 +162,7 @@ function probeWS(connection, host, probe) {
 	if(!(probe in probes)) {
 		return {host: host, probe: probe, error:'No such probe'};
 	}
-	var cmd = probes[probe].command;
+
 	if(undefined === proxies[host]) {
 	    proxies[host] = new StatefulProcessCommandProxy({
 		name: "proxy_"+host,
@@ -121,10 +170,10 @@ function probeWS(connection, host, probe) {
 		min: 1,
 		idleTimeoutMS: 15000,
 		logFunction: function(severity,origin,msg) {
-		//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
+		    //console.log(severity.toUpperCase() + " " +origin+" "+ msg);
 		},
-		processCommand: ((host === 'localhost')?'/bin/bash':'/usr/bin/ssh'),
-		processArgs:  ((host === 'localhost')?[]:['-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-o', 'PreferredAuthentications=publickey', host]),
+		processCommand: 'scripts/generic.sh',
+		processArgs: [host],
 		processRetainMaxCmdHistory : 0,
 		processInvalidateOnRegex : {
 		    'stderr':[{regex:'.*error.*',flags:'ig'}]
@@ -138,7 +187,7 @@ function probeWS(connection, host, probe) {
 		},
 	    });
 	}
-	proxies[host].executeCommands([cmd]).then(function(res) {
+	proxies[host].executeCommands([probes[probe].command]).then(function(res) {
 	    var msg = {
 	        host   : host,
 		probe  : probe,
@@ -155,7 +204,12 @@ function probeWS(connection, host, probe) {
 		if(probes[p]['if'] === probe && -1 !== res[0].stdout.indexOf(probes[p].matches))
 		    msg.next.push(p);
 	    }
-	    connection.sendUTF(JSON.stringify(msg));
+
+    	    if(undefined !== probes[probe].localFilter) {
+		runFilter(connection, msg);
+    	    } else {
+    		connection.sendUTF(JSON.stringify(msg));
+    	    }
 	    return;
 	}).catch(function(error) {
 	    done(e);

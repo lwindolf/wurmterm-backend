@@ -1,16 +1,19 @@
 # WurmTerm 🐛
 
-Linux Terminal helper with Service Auto-Discovery + Rendering Capabilities.
+Linux Terminal companion app discovering services and issues on your servers.
 
 ![Screenshot WurmTerm](https://user-images.githubusercontent.com/3315368/118046621-dde32e00-b379-11eb-8400-7942eb401e86.png)
 
-WurmTerm watches over the state of servers you are connected to via SSH sessions
-and alerts you of issues detected and provides you with an overview of detected 
-services (web servers, databases, RAID ...).
+WurmTerm
+- watches over the state of servers you are connected to via SSH sessions
+- alerts you of issues detected
+- provides you with an overview of detected services (web servers, databases, RAID ...)
+- allows you to create CPU flame graphs
 
-This allows you to keep WurmTerm open as a browser tab alongside you terminal and
-it will notify you about issues on hosts you "travel" to faster than you could debug
-issues yourself. It will often uncover problem you do not notice at all.
+By using the same password-less SSH connect commands you use WurmTerm can be open
+as a browser tab alongside you multiple terminal (tabs) and it will visually notify 
+you about issues on hosts you "travel" to faster and more comprehensive than you
+could debug issues yourself. It will often uncover problem you do not notice at all.
 
 Probing does not happen via brute-force, but depending on services detected via
 a `netstat`/`ss` listing.
@@ -46,3 +49,4 @@ Wurmterm assumes
 - that it can connect to all those nodes without credentials
 - that you use `ssh <node|ip>` only and handle all private key switching in your SSH config
 - that it is always allowed to sudo (but won't complain if it does not succeed)
+

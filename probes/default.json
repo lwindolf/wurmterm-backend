@@ -37,6 +37,11 @@
 	     }
         }
    },
+   "perf": {
+        "name"       : "perf",
+        "command"    : "(sudo perf record -F 99 -g -a -o /tmp/perf.wurmterm -- sleep 15 && sudo perf script -i /tmp/perf.wurmterm); sudo rm /tmp/perf.wurmterm",
+        "localFilter": "scripts/stackcollapse-perf.pl | scripts/flamegraph.pl"
+   },
    "netstat-a": {
         "name"   : "All Connections",
         "command": "(sudo -n netstat -tulpan --numeric-hosts 2>/dev/null || netstat -tulan 2>/dev/null || sudo -n ss -etupn 2>/dev/null || ss -etunp 2>/dev/null) | egrep -v '^(Active Internet|Proto)'",
