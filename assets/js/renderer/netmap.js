@@ -1,8 +1,13 @@
-// IPv4 only netmap renderer
+// vim: set ts=4 sw=4: 
+/* IPv4 only netmap renderer
+
+   A view showing per-service connections for a single host in a
+   directed graph with inbound and outbound connections for the host
+   allowing to traverse the connections */
 
 renderers.netmap = function netmapRenderer() {
 	this.netMapData = {};
-	this.previousNode;
+	this.previousNode = undefined;
 };
 
 // parse netstat output
@@ -106,7 +111,7 @@ renderers.netmap.prototype.updateGraph = function() {
 
 	$.each(this.netMapData.nodes, function(i, n) {
 		var props = { "label": n.label, "labelType": "html", "class": n.class };
-		if(n.class === 'local')
+		if(undefined !== n.class && 0 === n.class.indexOf('local'))
 			props.width = 100;
 		g.setNode(i, props);
 	});
@@ -126,10 +131,10 @@ renderers.netmap.prototype.updateGraph = function() {
 	});
 
 	try {
-	var render = new dagreD3.render();
-	render(nodeArea, g);
+		var render = new dagreD3.render();
+		render(nodeArea, g);
 	} catch(e) {
-	console.error(e);
+		console.error(e);
 	}
 
 	var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
@@ -163,7 +168,7 @@ renderers.netmap.prototype.addGraphNode = function(service, direction) {
 		});
 		tmp = tmp.split(/\n/).sort().filter(s => s != "").join("<br/>");
 		if(truncate)
-			tmp += "<br/><span style='color:#444; font-size:small'>("+(service[direction].length - 6)+" more ...)</span>";
+			tmp += "<br/><span style='color:#777; font-size:small'>("+(service[direction].length - 6)+" more ...)</span>";
 
 		d.nodes.push({
 			"label": tmp
