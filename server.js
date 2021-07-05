@@ -34,6 +34,10 @@ process.on('uncaughtException', function(err) {
   console.log(err.stack);
 });
 
+// Hostname matching based on https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
+const validIpAddressRegex = /^([a-zA-Z0-9]+@){0,1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
+const validHostnameRegex = /^([a-zA-Z0-9]+@){0,1}(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+
 // Remote server probe API
 
 function get_history(request, response) {
@@ -44,9 +48,6 @@ function get_history(request, response) {
 		response.writeHead(500, {'Content-Type': 'text/plain'});
 		response.end(`Error: failed to fetch SSH history`);
 	    } else {
-		// Hostname matching based on https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
-		const validIpAddressRegex = /^([a-zA-Z0-9]+@){0,1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
-		const validHostnameRegex = /^([a-zA-Z0-9]+@){0,1}(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
 
 		var results = stdout.split(/\n/).filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex));
                 response.writeHead(200, {'Content-Type': 'application/json'});
@@ -72,7 +73,7 @@ function get_hosts(request, response) {
 		response.writeHead(500, {'Content-Type': 'text/plain'});
 		response.end(`Error: error: ${error.message} stderr: ${stderr}`);
 	    } else {
-		var results = stdout.split(/\n/);
+		var results = stdout.split(/\n/).filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex));
 		results.push('localhost');
                 response.writeHead(200, {'Content-Type': 'application/json'});
 	        response.end(JSON.stringify(results
