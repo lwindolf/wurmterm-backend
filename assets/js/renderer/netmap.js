@@ -143,19 +143,27 @@ renderers.netmap.prototype.addGraphNode = function(service, direction) {
 		var remote = service[direction].join(",") + direction;
 		var nId = d.nodes.length;
 		var tmp = "";
+		var truncate = false;
 		$.each(service[direction], function(i, name) {
-			if (i < 6) {
+			if(tmp.includes(name))
+				return;
+			if(name == "")
+				return;
+			if(i < 6) {
 				if (name.match(/^(10\.|172\.(1[6-9]|2.|3[0-1])|192\.168)/))
-					tmp += name+"<br/> ";
+					tmp += name+"\n";
 				else if (name.match(/^[0-9]/))
-					tmp += '<a class="resolve" href="javascript:renderers.netmap.prototype.lookupIp(\''+name+'\')" title="Click to resolve IP">'+name+"</a><br/> ";
+					tmp += '<a class="resolve" href="javascript:renderers.netmap.prototype.lookupIp(\''+name+'\')" title="Click to resolve IP">'+name+"</a>\n";
 				else {
-					tmp += name+"<br/> ";
+					tmp += name+"\n";
 				}
 			}
-			if (i == 6)
-				tmp += "<span style='color:#444; font-size:small'>("+(service[direction].length - 6)+" more ...)</span>";
+			if(i == 6)
+				truncate = true;
 		});
+		tmp = tmp.split(/\n/).sort().filter(s => s != "").join("<br/>");
+		if(truncate)
+			tmp += "<br/><span style='color:#444; font-size:small'>("+(service[direction].length - 6)+" more ...)</span>";
 
 		d.nodes.push({
 			"label": tmp
