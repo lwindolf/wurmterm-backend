@@ -1,6 +1,6 @@
 {
-    "name": "wurmterm",
-    "main": "server.js",
+    "name": "WurmTerm PWA",
+    "main": "js/main.js",
     "description": "WurmTerm, a friendly wurm walking along your SSH sessions",
     "license": "GPL-3.0",
     "repository": {
@@ -13,10 +13,10 @@
         "express": ">=4.18.2",
         "jquery": ">=3.6.0",
         "promise": "~8.0.0",
-        "stateful-process-command-proxy": "~1.0.1",
         "websocket": "^1.0.34"
     },
     "scripts": {
-        "test": "jshint *.js assets/js/*.js"
+        "test": "jshint *.js js/*.js lib/*.js",
+        "start": "python3 -m http.server"
     }
 }

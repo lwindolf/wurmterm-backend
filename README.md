@@ -20,9 +20,13 @@ a `netstat`/`ss` listing.
 
 ## Usage
 
-To interactively start
+To interactively start use
 
-    ./wurm
+    backend/wurm
+
+which will both start the backend if needed and launch the web GUI.
+Note that you can install the web GUI as a local app (PWA) when using
+Google Chrome.
 
 ## Installation
 

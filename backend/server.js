@@ -19,6 +19,7 @@
 
 const http = require("http"),
       express = require("express"),
+      cors = require('cors'),
       path = require("path"),
       fs = require('fs'),
       app = express(),
@@ -27,6 +28,7 @@ const http = require("http"),
 
 const { exec } = require("child_process");
 
+eval(fs.readFileSync('config.js')+'');
 var probes = require('./probes/default.json');
 var proxies = {};
 var filters = {};
@@ -222,6 +224,16 @@ function probeWS(connection, host, probe) {
     }
 }
 
+// CORS
+
+var corsOptions = {
+	origin: "*",
+	optionsSuccessStatus: 200,
+	methods: "GET, PUT"
+ }
+    
+app.use(cors(corsOptions));
+
 // Routing
 
 app.get('/api/history', function(req, res) {
@@ -245,7 +257,7 @@ app.all('*', function(req, res) {
    res.sendfile('index.html', { root: 'assets' });
 });
 
-const server = http.createServer(app).listen(8181);
+const server = http.createServer(app).listen(port);
 process.title = 'WTBackend';
 
 const wsServer = new WebSocketServer({
@@ -265,4 +277,4 @@ wsServer.on('request', function(request) {
 });
 
 
-console.log('Server running at http://127.0.0.1:8181/');
+console.log(`Server running at http://127.0.0.1:${port}/`);

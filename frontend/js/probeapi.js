@@ -14,7 +14,7 @@ function ProbeAPI() {
 	$.ajax({
 		dataType: "json",
 		async: false,
-		url: "/api/probes",
+		url: `${proto}://${host}:${port}/api/probes`,
 		success: function(data) {
 			a.probes = data;
 		}
