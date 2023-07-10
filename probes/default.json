@@ -327,6 +327,21 @@
            }
        }
    },
+   "k8s Events": {
+     "command": "kubectl get events 2>/dev/null | grep -v Normal",
+     "local"     : "True",
+     "localOnly" : "True",
+     "initial": "True",
+     "refresh": 30,
+     "render" : {
+         "type" : "table",
+         "split": "\\s+",
+         "severity": {
+             "critical" : "Fatal",
+             "warning"  : "Warning"
+         }
+     }
+   },
    "AWS EC2": {
        "command": "(test -n \"$AWS_PROFILE\" && aws ec2 describe-instances) | jq \".Reservations[].Instances[] | .InstanceId, .State.Name, .InstanceType, .Placement.AvailabilityZone, .PublicIpAddress\" | xargs -n 5",
        "refresh": 900,
