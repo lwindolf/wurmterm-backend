@@ -1,9 +1,12 @@
+// vim: set ts=4 sw=4:
+/*jshint esversion: 6 */
+
 var hosts = {};
 var extraHosts = [];		// list of hosts manually added
 var pAPI = new ProbeAPI();
 
 function multiMatch(text, severities) {
-          var matchResult = undefined;
+        var matchResult;
         $.each(['critical','warning'], function(i, name) {
                 if(severities[name] === undefined)
                         return;
@@ -20,29 +23,29 @@ function multiMatch(text, severities) {
 
 // Note: mutates d.probeSeverity
 function markSeverity(s, d) {
-                if(d['render'] === undefined || d.render['severity'] === undefined)
+                if(d.render === undefined || d.render.severity === undefined)
                         return s;
 
                 switch(multiMatch(s, d.render.severity)) {
                         case 'critical':
-                                d.probeSeverity = 'critical'
-                            return "<span class='severity_critical'>"+s+"</span>";
+                                d.probeSeverity = 'critical';
+                                return "<span class='severity_critical'>"+s+"</span>";
                         case 'warning':
                                 if(d.probeSeverity === undefined)
-                                        d.probeSeverity = 'warning'
-                            return "<span class='severity_warning'>"+s+"</span>";
+                                        d.probeSeverity = 'warning';
+                                return "<span class='severity_warning'>"+s+"</span>";
                         default:
                                 return s;
                 }
 }
 
 function renderString(d) {
-        var res = new Array();
+        var res = [];
         $.each(JSON.stringify(d.stdout).split(/\\n/), function(i, line) {
                 res.push(markSeverity(line.replace(/\"/g, ""), d));
         });
         return res.join('<br/>');
- }
+}
 
 function renderTable(d) {
         var res = "<table>";
@@ -97,7 +100,7 @@ function resortBoxes(list) {
 
                         return (ac<bc?1:-1);
                 })
-                .map(node=>list.appendChild(node))
+                .map(node=>list.appendChild(node));
 }
 
 function visualizeHost(host, renderer) {
@@ -105,7 +108,6 @@ function visualizeHost(host, renderer) {
         $('#visualizedHost').html(host);
         $('#renderer').val(renderer);
         $('#visual').empty().height(600);
-console.log("rend="+renderer);
         try {
                 var r = new renderers[renderer]();
                 r.render(pAPI, '#visual', host);
@@ -176,20 +178,20 @@ function probeResultCb(probe, h, d) {
                         .addClass('ok')
                         .addClass('collapsed')
                         .removeClass('uncollapsed')
-                        .attr('collapsed', $('.box#'+id).attr('autocollapse'))
+                        .attr('collapsed', $('.box#'+id).attr('autocollapse'));
         else
                 $('.box#'+id)
                         .removeClass('ok')
                         .addClass('severity_'+ d.probeSeverity)
                         .addClass('uncollapsed')
                         .removeClass('collapsed')
-                        .attr('collapsed', $('.box#'+id).attr('forcecollapse'))
+                        .attr('collapsed', $('.box#'+id).attr('forcecollapse'));
 
         if(d.stdout === "") {
-                $(`.box#${id}`).addClass('empty')
+                $(`.box#${id}`).addClass('empty');
                 $(`.box#${id} .content`).html('Probe result empty!');
         } else {
-                $(`.box#${id}`).removeClass('empty')
+                $(`.box#${id}`).removeClass('empty');
                 $(`.box#${id} .content`).html(tmp);
         }
 
@@ -245,7 +247,7 @@ function updateHosts() {
         })
         .fail(function(data) {
                 console.error("failed fetching /api/hosts! "+data);
-        })
+        });
 
         setTimeout(function () {
                 updateHosts();

@@ -1,4 +1,5 @@
 // vim: set ts=4 sw=4:
+/* jshint esversion: 6 */
 /* perf based flamegraphs
    A view allowing you to start a remote perf tool run and process
    the result into a SVG to be displayed by the renderer. */
@@ -31,4 +32,4 @@ renderers.perfFlameGraph.prototype.render = function(pAPI, id, host) {
             console.error(`probe Error: host=${h} probe=${probe} ${e}`);
         });
     });
-}
+};

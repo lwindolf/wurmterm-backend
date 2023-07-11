@@ -12,11 +12,12 @@
         "dagre-d3": "^0.6.4",
         "express": ">=4.18.2",
         "jquery": ">=3.6.0",
+        "jshint": "^2.13.6",
         "promise": "~8.0.0",
         "websocket": "^1.0.34"
     },
     "scripts": {
-        "test": "jshint *.js js/*.js lib/*.js",
+        "test": "jshint *.js js/*.js js/renderer/*.js",
         "start": "python3 -m http.server"
     }
 }

@@ -1,4 +1,5 @@
 // vim: set ts=4 sw=4:
+/* jshint esversion: 6 */
 /* IPv4 only netmap renderer
 
    A view showing per-service connections for a single host in a
@@ -14,7 +15,7 @@ renderers.netmap = function netmapRenderer() {
 renderers.netmap.prototype.parse = function(results) {
 	var listen_port_to_program = {};
 
-	var results = results.split(/\n/)
+	results = results.split(/\n/)
 	.map(function(line) {
 		return line.split(/\s+/);
 	})
@@ -53,11 +54,11 @@ renderers.netmap.prototype.parse = function(results) {
 			rn   : line[4].split(/:/)[0],
 			"rtn": rtn,
 			dir  : direction
-		}
+		};
 	});
 
 	return { 'results': results };
-}
+};
 
 // IP lookup popup helper
 renderers.netmap.prototype.lookupIp = function(ip) {
@@ -70,8 +71,8 @@ renderers.netmap.prototype.lookupIp = function(ip) {
 		      "\nOrg: "+data.org+
 		      "\nPostal: "+data.postal
 		);
-	})
-}
+	});
+};
 
 // FIXME
 var viewBoxX =0;
@@ -130,7 +131,7 @@ renderers.netmap.prototype.updateGraph = function() {
 		g.setEdge(l.source, l.target, props);
 	});
 
-	try {TypeError
+	try {
 		var render = new dagreD3.render();
 		render(nodeArea, g);
 	} catch(e) {
@@ -138,7 +139,7 @@ renderers.netmap.prototype.updateGraph = function() {
 	}
 
 	var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-}
+};
 
 renderers.netmap.prototype.addGraphNode = function(service, direction) {
 	var view = this;
@@ -181,7 +182,7 @@ renderers.netmap.prototype.addGraphNode = function(service, direction) {
 		if(direction !== 'in')
 			d.links.push({source: 0, target: d.nodeToId[service.service], class: "null", weigth: 0});
 	}
-}
+};
 
 renderers.netmap.prototype.addHost = function(data) {
 	var view = this;
@@ -195,7 +196,7 @@ renderers.netmap.prototype.addHost = function(data) {
 
 	// get connections for this host
 	{
-		var connByService = new Array();
+		var connByService = [];
 		$.each(data.results, function(i, item) {
 			// Reduce connections to per service connections with ids like
 			//   high:::java:::high
@@ -259,7 +260,7 @@ renderers.netmap.prototype.addHost = function(data) {
 
 		view.updateGraph();
 	}
-}
+};
 
 renderers.netmap.prototype.render = function(pAPI, id, host) {
 	var r = this;
