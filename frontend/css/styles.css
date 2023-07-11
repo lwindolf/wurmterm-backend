@@ -3,6 +3,12 @@ body {
     font-size:10pt;
     background:#444;
     color:#cce;
+    margin: 0;
+    padding: 0;
+}
+
+#main {
+    padding:12px;
 }
 
 .clearfix::after {
@@ -211,6 +217,28 @@ span.severity_warning {
     color: black;
 }
 
+.title {
+    color:  white;
+    margin-right: 12px;
+}
+
+#menu {
+    background: #222;
+    padding: 12px 6px;
+}
+
+#menu a {
+    color: #AAC;
+    text-decoration: none;
+}
+#menu a:hover {
+    text-decoration: underline;
+}
+#menu a:active {
+    color: white;
+    font-weight: bold;
+}
+
 #footer {
     background: #777;
     border: 1px solid lightgray;
@@ -218,13 +246,11 @@ span.severity_warning {
     position: relative;
     bottom: 0px;
 }
+
 #history {
     margin: 3px;
     margin-block-start: 0;
     padding-inline-start: 0;
-}
-.title {
-    color:  white;
 }
 #history li {
     display:inline-block;
@@ -238,4 +264,17 @@ span.severity_warning {
     text-decoration: underline;
     cursor: pointer;
     color: white;
+}
+
+.settings h2 {
+    border-bottom: 1px solid #ddd;
+}
+
+.settingsBox {
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background: #eee;
+    padding: 6px; 
+    margin:6px 0;
+    min-height: 100px;
 }

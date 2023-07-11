@@ -1,9 +1,10 @@
 // vim: set ts=4 sw=4:
 /* jshint esversion: 6 */
-/* Probe API singleton, allowing one host being probed at a time.
-   Manages auto-updates and probe dependency tree  */
 
-function ProbeAPI() {
+/* Probe API singleton, allowing one host being probed at a time.
+   Manages auto-updates, host discovery and probe dependency tree  */
+
+function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	if(arguments.callee._singletonInstance) {
 		return arguments.callee._singletonInstance;
 	}
@@ -11,50 +12,72 @@ function ProbeAPI() {
 	arguments.callee._singletonInstance = this;
 
 	var a = this;
-	$.ajax({
-		dataType: "json",
-		async: false,
-		url: `${proto}://${host}:${port}/api/probes`,
-		success: function(data) {
-			a.probes = data;
-		}
-	    // FIXME: error handling
-	});
+	a.probes = {};
 	a.hosts = {};
-	a.ws = new WebSocket('ws://localhost:8181/');
+	a.ws = new WebSocket(settings.backendEndpoint);
 	a.ws.onmessage = function(e) {
 		try {
 			var d = JSON.parse(e.data);
-			var p = a.hosts[d.host].probes[d.probe];
+			if(d.cmd === 'history')
+				a._updateHistoryCb(d.result);
+			if(d.cmd === 'hosts')
+				a._updateHostsCb(d.result);
+			if(d.cmd === 'probes')
+				a.probes = d.result;
 
-			// FIXME: Introduce message types
-			if(undefined === p) {
-				console.error(`Message misses probe info or does not match known probe!`);
-			} else {
-				p.updating = false;
-				p.timestamp = Date.now();
-				if(undefined === d.error) {
-					// Always trigger follow probes, serialization is done in backend
-					for(var n in d.next) {
-						a.ws.send(`${d.host}:::${d.next[n]}`);
-					}
-					p.cb(d.probe, d.host, d);
+			if(d.cmd === 'probe') {
+				var p = a.hosts[d.host].probes[d.probe];
 
-					// Always trigger follow probes, serialization is done in backend
-					for(n in d.next) {
-						a.probe(d.host, d.next[n], p.cb, p.errorCb);
-					}
+				if(undefined === p) {
+					console.error(`Message ${d} misses probe info or does not match known probe!`);
 				} else {
-				        p.errorCb(d.e, d.probe, d.host);
+					p.updating = false;
+					p.timestamp = Date.now();
+					if(undefined === d.error) {
+						// Always trigger follow probes, serialization is done in backend
+						for(var n in d.next) {
+							a.ws.send(`${d.host}:::${d.next[n]}`);
+						}
+						p.cb(d.probe, d.host, d);
+
+						// Always trigger follow probes, serialization is done in backend
+						for(n in d.next) {
+							a.probe(d.host, d.next[n], p.cb, p.errorCb);
+						}
+					} else {
+						p.errorCb(d.e, d.probe, d.host);
+					}
 				}
 			}
 		} catch(ex) {
 			console.error(`Exception: ${ex}\nMessage: ${JSON.stringify(e)}`);
 		}
 	};
+	a.ws.onopen = function(e) {
+		a._updateHosts();
+		a.ws.send("probes");
+		a.ws.send("history");
+	}
 
 	this.getProbeByName = function(name) {
 	    return a.probes[name];
+	};
+
+	// History CB is a one-shot only
+	this._updateHistoryCb = updateHistoryCb;
+
+	// Setup periodic host update fetch and callback
+	this._updateHostsCb = updateHostsCb;
+	this._updateHosts = function() {
+		var a = this;
+		a.ws.send(`hosts`);
+
+		if(a._updateHostsTimeout)
+                	clearTimeout(a._updateHostsTimeout);
+        
+		a._updateHostsTimeout = setTimeout(function () {
+			a._updateHosts();
+		}, settings.refreshInterval * 1000);
 	};
 
 	// Perform a given probe and call callback cb for result processing
@@ -81,7 +104,7 @@ function ProbeAPI() {
 			p.errorCb = errorCb;
 		}
 
-		a.ws.send(`${host}:::${name}`);
+		a.ws.send(`probe ${host}:::${name}`);
 	};
 
 	// Triggers the initial probes, all others will be handled in the

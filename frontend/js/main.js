@@ -1,9 +1,10 @@
 // vim: set ts=4 sw=4:
 /*jshint esversion: 6 */
 
+var settings;
 var hosts = {};
 var extraHosts = [];		// list of hosts manually added
-var pAPI = new ProbeAPI();
+var pAPI;
 
 function multiMatch(text, severities) {
         var matchResult;
@@ -225,41 +226,29 @@ function probeResultCb(probe, h, d) {
         resortBoxes($(`#${hId} .boxes`)[0]);
 }
 
-function updateHosts() {
-        $.getJSON(`${proto}://${host}:${port}/api/hosts`, {})
-        .done(function(d) {
-                // Stop disconnected hosts
-                $('.node:not(.disconnected)').each(function(i, n) {
-                        var h = $(n).data('host');
-                        if(!d.includes(h) && !extraHosts.includes(h) && (h !== 'localhost')) {
-                                console.log('stopping '+h);
-                                pAPI.stop(h);
-                                $(n).addClass('disconnected');
-                        }
-                });
-                // Start newly connected hosts
-                $.each(d, function(i, h) {
-                        var hId = strToId(h);
-                        if(!$(`.node#${hId}`).length) {
-                                addHost(h);
-                        }
-                });
-        })
-        .fail(function(data) {
-                console.error("failed fetching /api/hosts! "+data);
+function updateHosts(d) {
+        // Stop disconnected hosts
+        $('.node:not(.disconnected)').each(function(i, n) {
+                var h = $(n).data('host');
+                if(!d.includes(h) && !extraHosts.includes(h) && (h !== 'localhost')) {
+                        console.log('stopping '+h);
+                        pAPI.stop(h);
+                        $(n).addClass('disconnected');
+                }
         });
-
-        setTimeout(function () {
-                updateHosts();
-        }, 3000);
+        // Start newly connected hosts
+        $.each(d, function(i, h) {
+                var hId = strToId(h);
+                if(!$(`.node#${hId}`).length) {
+                        addHost(h);
+                }
+        });
 }
 
-function addHistory() {
-        $.getJSON(`${proto}://${host}:${port}/api/history`, {})
-        .done(function(d) {
-                $.each(d, function(i, h) {
-                        $('#history').append(`<li>${h}</li>`);
-                });
+function addHistory(d) {
+        $('#history').empty();
+        $.each(d, function(i, h) {
+                $('#history').append(`<li>${h}</li>`);
         });
         $('ul#history').on('click', 'li', function() {
                 var h = $(this).text();
@@ -284,15 +273,26 @@ function addHistory() {
 (function() {
         'use strict';
 
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker
-                   .register('./worker.js');
-        }
+        if('serviceWorker' in navigator)
+                navigator.serviceWorker.register('./worker.js');
 
-        updateHosts();
-        addHistory();
+        settingsLoad().then((value) => {
+                settings = value;
 
-        $('#renderer').on('change', function() {
-                visualizeHost($('#visualizedHost').text(), $(this).val());
+                if(document.location.pathname.match(/\/(index.html)?/)) {
+                        pAPI = new ProbeAPI(updateHosts, addHistory);
+                        //addHistory();
+
+                        $('#renderer').on('change', function() {
+                                visualizeHost($('#visualizedHost').text(), $(this).val());
+                        });
+                }                        
+
+                if(document.location.pathname === "/settings.html")
+                        settingsDialog();
+
+        }).catch((info) => {
+                console.error(info);
+                setInfo(info);
         });
 })();

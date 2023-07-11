@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 	<meta charset="UTF-8">
-	<title>WurmTerm</title>
+	<title>WurmTerm - Settings</title>
 	<link rel="stylesheet" type='text/css' href='css/styles.css'/>
 	<link rel="manifest" href="manifest.json">
 	<meta name="theme-color" content="white"/>
@@ -11,32 +11,31 @@
 <body>
 	<div id='menu'>
 		<span class='title'>🐛 WurmTerm</span>
-		<!--[ <a href='index.html'>Home</a> ]
-		[ <a href='settings.html'>Settings</a> ]-->
+		[ <a href='index.html'>Home</a> ]
+		[ <a href='settings.html'>Settings</a> ]
 	</div>
-	<div id='main'>
-		<div id='visualContainer'>
-			Visualization
-			<select id='renderer'>
-				<option value='perfFlameGraph'>perf flamegraph</option>
-			</select>
-			Host
-			<span id='visualizedHost'></span>
-			<div id='visual'>
-			</div>
-		</div>
-		<div id='nodes'>
-		</div>
-		<div id='footer'>
-			<div class='title'>Your SSH History (click to connect)</div>
-			<ul id='history'>
-			</ul>
-			<form id='hostForm'>
-				Or enter hostname:<br/>
-				<input id='hostEntry' type='text'/>
-				<input type='submit' value='Connect'/>
-			</form>
-		</div>
+	<div id='main' class='settings'>
+		<h2>Refresh Interval</h2>
+
+		<input type="number" size="6" step="5" id="refreshInterval" name="refreshInterval" min="10">
+		Seconds (min 10s)
+
+		<h2>Allowed probe types</h2>
+	
+		<div><input type="checkbox"> Run SSH probes.</div>
+		<div><input type="checkbox"> Run localhost probes checking the local computer.</div>
+		<div><input type="checkbox"> Auto-discover active kubernetes contexts.</div>
+
+		<h2>Probes Blacklist</h2>
+
+		<p>While you can activate different probe types above you can blacklist 
+		specific probes below by clicking them to toggle their blacklist status.</p>
+
+		Disabled:
+                <div class="settingsBox" id="probesDisabled"></div>
+                Enabled:
+                <div class="settingsBox" id="probesEnabled"></div>
+
 	</div>
 
 	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>

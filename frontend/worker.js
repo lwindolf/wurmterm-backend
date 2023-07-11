@@ -3,10 +3,12 @@ var cacheName = 'wurmterm';
 var filesToCache = [
   '/',
   '/index.html',
+  '/settings.html',
   '/css/styles.css',
-  '/js/main.js',
   '/js/config.js',
+  '/js/main.js',
   '/js/probeapi.js',
+  '/js/settings.js',
   '/js/renderer/netmap.js',
   '/js/renderer/perf-flamegraph.js'
 ];

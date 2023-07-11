@@ -33,6 +33,7 @@ var probes = require('./probes/default.json');
 var proxies = {};
 var filters = {};
 
+process.title = 'WurmTermBackend';
 process.on('uncaughtException', function(err) {
   // dirty catch of broken SSH pipes
   console.log(err.stack);
@@ -42,61 +43,53 @@ process.on('uncaughtException', function(err) {
 const validIpAddressRegex = /^([a-zA-Z0-9]+@){0,1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
 const validHostnameRegex = /^([a-zA-Z0-9]+@){0,1}(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
 
-// Remote server probe API
-
-function get_history(request, response) {
+// get history of SSH commands
+function get_history(connection) {
     try {
 	const cmd = `cat ~/.bash_history | awk '{if (\$1 == \"ssh\" && \$2 ~ /^[a-z0-9]/) {print \$2}}' | tail -50 | sort -u`;
 	exec(cmd, (error, stdout, stderr) => {
-	    if (error) {
-		response.writeHead(500, {'Content-Type': 'text/plain'});
-		response.end(`Error: failed to fetch SSH history`);
-	    } else {
+		if (error)
+			throw(error);
 
-		var results = stdout.split(/\n/).filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex));
-                response.writeHead(200, {'Content-Type': 'application/json'});
-	        response.end(JSON.stringify(results
-		    .filter(s => s.length > 1)
-		));
-	        return;
-	    }
+		connection.sendUTF(JSON.stringify({
+			cmd: 'history',
+			result: stdout
+				.split(/\n/)
+				.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
+				.filter(s => s.length > 1)
+		}));
 	});
     } catch(e) {
-	response.writeHead(501, {'Content-Type': 'text/plain'});
-	console.log(e);
-	response.end("Exception: "+JSON.stringify(e));
+	done(e);
+	return {cmd: 'history', error:e};
     }
 }
 
-function get_hosts(request, response) {
+// get all hosts currently SSH connected
+function get_hosts(connection) {
+	try {
+		const cmd = `pgrep -fla "^ssh " || true`;
+		exec(cmd, (error, stdout, stderr) => {
+			if (error)
+				throw(error);
 
-    try {
-	const cmd = `pgrep -fla "^ssh " || true`;
-	exec(cmd, (error, stdout, stderr) => {
-	    if (error) {
-		response.writeHead(500, {'Content-Type': 'text/plain'});
-		response.end(`Error: error: ${error.message} stderr: ${stderr}`);
-	    } else {
-		var results = stdout.split(/\n/).filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex));
-		results.push('localhost');
-                response.writeHead(200, {'Content-Type': 'application/json'});
-	        response.end(JSON.stringify(results
-		    .map(s => s.replace(/^[0-9]+ +ssh +/, ''))
-		    .filter(s => s.length > 1)
-		));
-	        return;
-	    }
-	});
-    } catch(e) {
-	response.writeHead(501, {'Content-Type': 'text/plain'});
-	console.log(e);
-	response.end("Exception: "+JSON.stringify(e));
-    }
+			var hosts = stdout.split(/\n/)
+					.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
+					.map(s => s.replace(/^[0-9]+ +ssh +/, ''))
+					.filter(s => s.length > 1);
+			hosts.push('localhost');
+			connection.sendUTF(JSON.stringify({
+				cmd: 'hosts',
+				result: hosts				
+			}));
+		});
+	} catch(e) {
+		done(e);
+		return {cmd: 'hosts', error:e};
+	}
 }
 
-function get_probes(request, response) {
-   response.writeHead(200, {'Content-Type': 'application/json'});
-
+function get_probes(connection) {
    // Return all probes and initial flag so a frontend knows
    // where to start
    var output = {};
@@ -111,7 +104,10 @@ function get_probes(request, response) {
            localFilter : p.localFilter
        };
    });
-   response.end(JSON.stringify(output));
+   connection.sendUTF(JSON.stringify({
+	cmd: 'probes',
+	result: output
+   }));
 }
 
 function runFilter(connection, msg) {
@@ -192,6 +188,7 @@ function probeWS(connection, host, probe) {
 	}
 	proxies[host].executeCommands([probes[probe].command]).then(function(res) {
 	    var msg = {
+		cmd    : 'probe',
 	        host   : host,
 		probe  : probe,
 		stdout : res[0].stdout,
@@ -216,16 +213,15 @@ function probeWS(connection, host, probe) {
 	    return;
 	}).catch(function(error) {
 	    done(e);
-	    return {host: host, probe: probe, error:e};
+	    return {cmd: 'probe', host: host, probe: probe, error:e};
 	});
     } catch(e) {
 	done(e);
-        return {host: host, probe: probe, error:e};
+        return {cmd: 'probe', host: host, probe: probe, error:e};
     }
 }
 
-// CORS
-
+// Setup CORS '*' to support a PWA on mobile or some webserver
 var corsOptions = {
 	origin: "*",
 	optionsSuccessStatus: 200,
@@ -234,32 +230,7 @@ var corsOptions = {
     
 app.use(cors(corsOptions));
 
-// Routing
-
-app.get('/api/history', function(req, res) {
-   get_history(req, res);
-});
-
-app.get('/api/hosts', function(req, res) {
-   get_hosts(req, res);
-});
-
-app.get('/api/probes', function(req, res) {
-   get_probes(req, res);
-});
-
-app.use(express.static(path.join(__dirname, 'assets')));
-['jquery', 'd3', 'dagre-d3'].forEach(function(name) {
-    app.use(`/lib/${name}`, [ express.static(path.join(__dirname, 'node_modules', name, 'dist')) ]);
-});
-
-app.all('*', function(req, res) {
-   res.sendfile('index.html', { root: 'assets' });
-});
-
 const server = http.createServer(app).listen(port);
-process.title = 'WTBackend';
-
 const wsServer = new WebSocketServer({
     httpServer: server
 });
@@ -268,13 +239,30 @@ const wsServer = new WebSocketServer({
 wsServer.on('request', function(request) {
     const connection = request.accept(null, request.origin);
     connection.on('message', function(message) {
-	// we expect message in format <host>:::<probe>
-	var tmp = message.utf8Data.split(/:::/);
-	probeWS(connection, tmp[0], tmp[1]);
+	// General syntax is "<command>[ <parameters>]"
+	var cmd    = message.utf8Data.split(/ /)[0];
+	var params = message.utf8Data.split(/ /)[1];
+
+	if(cmd === 'hosts')
+		return get_hosts(connection);
+	if(cmd === 'probes')
+		return get_probes(connection);
+	if(cmd === 'history')
+		return get_history(connection);
+
+	if(cmd === 'probe') {
+		// we expect message in format "probe <host>:::<probe>"
+		var tmp = params.split(/:::/);
+		return probeWS(connection, tmp[0], tmp[1]);
+	}
+
+	connection.sendUTF(JSON.stringify({
+		cmd: cmd,
+		error: 'Unsupported command'
+	}));
     });
     connection.on('close', function(reasonCode, description) {
     });
 });
 
-
-console.log(`Server running at http://127.0.0.1:${port}/`);
+console.log(`Server running at ws://127.0.0.1:${port}/`);
