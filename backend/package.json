@@ -1,7 +1,7 @@
 {
     "name": "wurmterm-backend",
     "main": "server.js",
-    "description": "WurmTerm, a friendly wurm walking along your SSH sessions",
+    "description": "WurmTerm, a friendly wurm walking along your SSH sessions. Backend service.",
     "license": "GPL-3.0",
     "repository": {
         "type": "git",
