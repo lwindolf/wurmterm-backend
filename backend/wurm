@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-PORT=$(grep port backend/config.js | sed 's/[^0-9]//g')
+PORT=$(grep port config.js | sed 's/[^0-9]//g')
 
 # Start nodejs server if needed, always start in background
 if pgrep -f WTBackend >/dev/null; then

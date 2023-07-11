@@ -22,11 +22,18 @@ a `netstat`/`ss` listing.
 
 To interactively start use
 
-    backend/wurm
+    cd backend
+    ./wurm
 
-which will both start the backend if needed and launch the web GUI.
+which will both start the backend if needed and launch the PWA.
 Note that you can install the web GUI as a local app (PWA) when using
 Google Chrome.
+
+To start the frontend locally
+
+    cd frontend
+    python3 -m http.server
+
 
 ## Installation
 
