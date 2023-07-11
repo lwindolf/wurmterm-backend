@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-PORT=8181
+PORT=$(grep port backend/config.js | sed 's/[^0-9]//g')
 
 # Start nodejs server if needed, always start in background
 if pgrep -f WTBackend >/dev/null; then
@@ -13,27 +13,22 @@ else
    (nohup node server.js >/dev/null 2>&1 &)
 fi
 
-# try to connect any wait if needed
-(
-set +e
-timeout=1
-while true; do
-	if exec 3<>/dev/tcp/localhost/$PORT; then
-		break
-	fi
-
-	sleep $timeout
-
-	if [ $timeout -lt 180 ]; then
-		timeout=$((timeout * 2))
-	fi
-done
-exec 3<&-
-exec 3>&-
-) 2>/dev/null
-
-# Always open the webpage when server was not yet running and when called
-# without being source (e.g. via .bash_rc)
-if [ "$server_started" = "1" ] || [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
-   nohup x-www-browser "http://localhost:$PORT" >/dev/null 2>&1
+# Try to lookup PWA installation, if it exists start it
+DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}/applications
+desktop_file=$(grep -l "^Name=WurmTerm" ${DATA_HOME}/*.desktop)
+startcmd=
+if [ "$desktop_file" != "" ]; then
+	startcmd=$(grep "^Exec=" "$desktop_file")
+	startcmd=${startcmd/Exec=/}
 fi
+
+if [ "$startcmd" != "" ]; then
+	$startcmd
+else
+	echo "WurmTerm PWA is not installed: cannot launch."
+	echo
+	echo "You can open WurmTerm manually here:"
+	echo "   http://localhost:$PORT"
+	echo
+fi
+
