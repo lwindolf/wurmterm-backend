@@ -3,32 +3,7 @@
 
 set -euo pipefail
 
-PORT=$(grep port config.js | sed 's/[^0-9]//g')
-
 # Start nodejs server if needed, always start in background
-if pgrep -f WTBackend >/dev/null; then
-   server_started=0
-else
-   server_started=1
+if ! pgrep -f WTBackend >/dev/null; then
    (nohup node server.js >/dev/null 2>&1 &)
 fi
-
-# Try to lookup PWA installation, if it exists start it
-DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}/applications
-desktop_file=$(grep -l "^Name=WurmTerm" ${DATA_HOME}/*.desktop)
-startcmd=
-if [ "$desktop_file" != "" ]; then
-	startcmd=$(grep "^Exec=" "$desktop_file")
-	startcmd=${startcmd/Exec=/}
-fi
-
-if [ "$startcmd" != "" ]; then
-	$startcmd
-else
-	echo "WurmTerm PWA is not installed: cannot launch."
-	echo
-	echo "You can open WurmTerm manually here:"
-	echo "   http://localhost:$PORT"
-	echo
-fi
-

@@ -1,5 +1,5 @@
 {
-    "name": "WurmTerm Backend",
+    "name": "wurmterm-backend",
     "main": "server.js",
     "description": "WurmTerm, a friendly wurm walking along your SSH sessions",
     "license": "GPL-3.0",
@@ -16,5 +16,8 @@
     },
     "scripts": {
         "test": "jshint *.js"
+    },
+    "bin": {
+        "wurm": "./wurm"
     }
 }

@@ -18,46 +18,42 @@ could debug issues yourself. It will often uncover problem you do not notice at 
 Probing does not happen via brute-force, but depending on services detected via
 a `netstat`/`ss` listing.
 
+## Installation
+
+From source
+
+    cd backend && npm install
+    cd frontend && npm install
+
 ## Usage
 
-To interactively start use
+Start the backend in your work environment:
 
-    cd backend
-    ./wurm
+    npx wurm
 
-which will both start the backend if needed and launch the PWA.
-Note that you can install the web GUI as a local app (PWA) when using
-Google Chrome.
+To always start the backend consider adding above line to your `~/.profile`.
 
 To start the frontend locally
 
     cd frontend
     python3 -m http.server
 
+Alternatively host the frontend code on a website of your choice by
+providing proper CORS headers in your webserver config to allow the
+PWA to access the local backend.
 
-## Installation
+## Remote Host Monitoring via SSH
 
-    sudo apt-get install npm
-    cd <source> && npm install
-    
-To automatically start WurmTerm with your first terminal opening add a line
-like the following to your `~/.bashrc`
-
-    (cd <install path> && source ./wurm & )
-
-
-## Host Wurm Tunneling
-
-Wurmterm starts a Node.js backend that uses StatefulCommandProxy to issue
+The WurmTerm backend uses Node.js and StatefulCommandProxy to issue
 SSH commands. It will check which SSH connections you have open at any time 
 and will start run probes to the same nodes. 
 
 ## Assumptions
 
-Wurmterm assumes 
+WurmTerm assumes 
 
 - that you use bash
-- that it can connect to all those nodes without credentials
+- that it can connect to all those hosts via SSH without credentials
 - that you use `ssh <node|ip>` only and handle all private key switching in your SSH config
 - that it is always allowed to sudo (but won't complain if it does not succeed)
 

@@ -1,7 +1,7 @@
 // vim: set ts=4 sw=4:
 /*jshint esversion: 6 */
 /*
-  Copyright (C) 2015-2021  Lars Windolf <lars.windolf@gmx.de>
+  Copyright (C) 2015-2023  Lars Windolf <lars.windolf@gmx.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
