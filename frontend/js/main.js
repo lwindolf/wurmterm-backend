@@ -3,7 +3,7 @@
 
 var settings;
 var hosts = {};
-var extraHosts = [];		// list of hosts manually added
+var extraHosts = [];    // list of hosts manually added
 var pAPI;
 
 function multiMatch(text, severities) {
@@ -270,6 +270,11 @@ function addHistory(d) {
         });
 }
 
+function view(id) {
+        $('.main').hide();
+        $(`#${id}`).show();
+}
+
 (function() {
         'use strict';
 
@@ -278,19 +283,12 @@ function addHistory(d) {
 
         settingsLoad().then((value) => {
                 settings = value;
+                pAPI = new ProbeAPI(updateHosts, addHistory);
+                view('main');
 
-                if(document.location.pathname.match(/\/(index.html)?/)) {
-                        pAPI = new ProbeAPI(updateHosts, addHistory);
-                        //addHistory();
-
-                        $('#renderer').on('change', function() {
-                                visualizeHost($('#visualizedHost').text(), $(this).val());
-                        });
-                }                        
-
-                if(document.location.pathname === "/settings.html")
-                        settingsDialog();
-
+                $('#renderer').on('change', function() {
+                        visualizeHost($('#visualizedHost').text(), $(this).val());
+                });
         }).catch((info) => {
                 console.error(info);
                 setInfo(info);

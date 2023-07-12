@@ -7,8 +7,9 @@ body {
     padding: 0;
 }
 
-#main {
-    padding:12px;
+.main {
+    padding: 12px;
+    display: none;
 }
 
 .clearfix::after {
@@ -266,8 +267,17 @@ span.severity_warning {
     color: white;
 }
 
-.settings h2 {
+#settings h2 {
     border-bottom: 1px solid #ddd;
+}
+
+#settings .probe {
+    display: inline-block;
+    background: #444;
+    margin:3px;
+    padding:3px 6px;
+    border-radius: 3px;
+    cursor: pointer;
 }
 
 .settingsBox {

@@ -13,6 +13,7 @@
         "express": ">=4.18.2",
         "jquery": ">=3.6.0",
         "jshint": "^2.13.6",
+        "mermaid": "^10.2.4",
         "promise": "~8.0.0",
         "websocket": "^1.0.34"
     },

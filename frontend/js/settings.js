@@ -65,13 +65,13 @@ function settingsSet(name, value) {
         }));
 }
 
-/* Load all known settings and return as object */
+/* Load all known settings */
 function settingsLoad() {
         return new Promise((resolve, reject) => {
                 _settingsDBOpen().then(function() {
                         return settingsGet('backendEndpoint', `ws://${host}:${port}/`);
                 }).then(function() {
-                        return settingsGet('refreshInterval', '10');
+                        return settingsGet('refreshInterval', '5');
                 }).then(function() {
                         return settingsGet('probeBlacklist', '[]');
                 }).then(function() {
@@ -79,11 +79,35 @@ function settingsLoad() {
                 }).then(function() {
                         resolve(_settings);
                 }).catch(function() {
-                        reject(`Error loading setting: ${e}`);
+                        reject(`Error loading settings: ${e}`);
                 });
         })
 }
 
-function settingsDialog() {
+function settingsInputChanged(ev) {
+        var i = ev.target;
+        setting
+}
 
+function settingsProbeToggle(ev) {
+        var p = ev.target;
+        var newParentId = '#'+(($(p).parent().attr('id') === 'probesDisabled')?'probesEnabled':'probesDisabled');
+        $(newParentId).append($(p));
+
+        var blacklist = [];
+        $('#probesDisabled .probe').each((i,e) => blacklist.push($(e).attr('data-name')));
+        settingsSet('probeBlacklist', blacklist);
+}
+
+function settingsDialog() {
+        document.getElementById('refreshInterval').value = settings.refreshInterval;
+
+        $.each(pAPI.probes, function(name, p) {
+                document.getElementById(
+                        (settings.probeBlacklist.includes(name)?'probesDisabled':'probesEnabled')
+                ).innerHTML += `<div class='probe' data-name='${name}'>${name}</div>`;
+        });
+
+        $('#settings input').change(ev => settingsSet($(ev.target).attr('id'), $(ev.target).val()));
+        $('#settings .probe').click(settingsProbeToggle);
 }

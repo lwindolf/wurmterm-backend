@@ -22,8 +22,10 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 				a._updateHistoryCb(d.result);
 			if(d.cmd === 'hosts')
 				a._updateHostsCb(d.result);
-			if(d.cmd === 'probes')
+			if(d.cmd === 'probes') {
 				a.probes = d.result;
+				settingsDialog();
+			}
 
 			if(d.cmd === 'probe') {
 				var p = a.hosts[d.host].probes[d.probe];
@@ -59,17 +61,16 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 		a.ws.send("history");
 	}
 
-	this.getProbeByName = function(name) {
+	a.getProbeByName = function(name) {
 	    return a.probes[name];
 	};
 
 	// History CB is a one-shot only
-	this._updateHistoryCb = updateHistoryCb;
+	a._updateHistoryCb = updateHistoryCb;
 
 	// Setup periodic host update fetch and callback
-	this._updateHostsCb = updateHostsCb;
-	this._updateHosts = function() {
-		var a = this;
+	a._updateHostsCb = updateHostsCb;
+	a._updateHosts = function() {
 		a.ws.send(`hosts`);
 
 		if(a._updateHostsTimeout)
@@ -81,9 +82,7 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	};
 
 	// Perform a given probe and call callback cb for result processing
-	this.probe = function(host, name, cb, errorCb) {
-		var a = this;
-
+	a.probe = function(host, name, cb, errorCb) {
 		// Never run exclusively local commands elsewhere automatically
 		if(host !== 'localhost' && a.probes[name].localOnly === 'True')
 			return;
@@ -136,7 +135,7 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	this.update = function(host) {
 		var a = this;
 		var now = Date.now();
-		this.updateTimer = setTimeout(this.update.bind(this), 5000);
+		this.updateTimer = setTimeout(this.update.bind(this), settings.refreshInterval * 1000);
 		$.each(this.probes, function(name, p) {
 			// On localhost run all local commands
 			if(this.host === 'localhost' && p.local !== 'True')

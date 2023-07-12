@@ -11,10 +11,10 @@
 <body>
 	<div id='menu'>
 		<span class='title'>🐛 WurmTerm</span>
-		<!--[ <a href='index.html'>Home</a> ]
-		[ <a href='settings.html'>Settings</a> ]-->
+		[ <a href='javascript:view("main")'>Home</a> ]
+		[ <a href='javascript:view("settings")'>Settings</a> ]
 	</div>
-	<div id='main'>
+	<div class='main' id='main'>
 		<div id='visualContainer'>
 			Visualization
 			<select id='renderer'>
@@ -37,6 +37,32 @@
 				<input type='submit' value='Connect'/>
 			</form>
 		</div>
+	</div>
+
+	<div class='main' id='settings'>
+		<h2>Refresh Interval</h2>
+
+		<p>How often WurmTerm will look for new or disconnected hosts.</p>
+
+		<input type="number" size="6" step="5" id="refreshInterval" name="refreshInterval" min="5">
+		Seconds (min 5s)
+
+		<!--<h2>Allowed probe types</h2>
+	
+		<div><input type="checkbox"> Run SSH probes.</div>
+		<div><input type="checkbox"> Run localhost probes checking the local computer.</div>
+		<div><input type="checkbox"> Auto-discover active kubernetes contexts.</div>
+		-->
+		<h2>Active Probes</h2>
+
+		<p><!--While you can activate different probe types above--> Control which
+		probes you want to run. Toggle their status by clicking.</p>
+
+		Enabled:
+                <div class="settingsBox" id="probesEnabled"></div>
+		Disabled:
+                <div class="settingsBox" id="probesDisabled"></div>
+
 	</div>
 
 	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
