@@ -1,5 +1,6 @@
 // vim: set ts=4 sw=4:
 /* jshint esversion: 6 */
+
 /* IPv4 only netmap renderer
 
    A view showing per-service connections for a single host in a
@@ -7,8 +8,7 @@
    allowing to traverse the connections */
 
 renderers.netmap = function netmapRenderer() {
-	this.netMapData = {};
-	this.previousNode = undefined;
+	mermaid.initialize({ startOnLoad: false });
 };
 
 // parse netstat output
@@ -74,194 +74,6 @@ renderers.netmap.prototype.lookupIp = function(ip) {
 	});
 };
 
-// FIXME
-var viewBoxX =0;
-var viewBoxY = 0;
-
-renderers.netmap.prototype.updateGraph = function() {
-	var width = $('#netmap').parent().width();
-	var height = $('#netmap').parent().height();
-
-    	var svg = d3.select("#netmap")
-	  .attr("width", width)
-          .attr("height", height);
-
-	// Allow panning as suggested in by dersinces (CC BY-SA 3.0) in
-	// http://stackoverflow.com/questions/20099299/implement-panning-while-keeping-nodes-draggable-in-d3-force-layout
-	var drag = d3.drag();
-	drag.on('drag', function(event) {
-	    viewBoxX -= event.dx;
-	    viewBoxY -= event.dy;
-	    svg.select('g.node-area').attr('transform', 'translate(' + (-viewBoxX) + ',' + (-viewBoxY) + ')');
-	});
-	svg.append('rect')
-	  .classed('bg', true)
-	  .attr('stroke', 'transparent')
-	  .attr('fill', 'transparent')
-	  .attr('x', 0)
-	  .attr('y', 0)
-	  .attr('width', width)
-	  .attr('height', height)
-	  .call(drag);
-
-	var nodeArea = svg.append('g').classed('node-area', true);
-
-	var g = new dagreD3.graphlib.Graph()
-				.setGraph({ "rankdir": "LR", "ranksep": 75, "nodesep": 12, "marginx": 20, "marginy": 20, "align": "DL" })
-				.setDefaultEdgeLabel(function() { return {}; });
-
-	$.each(this.netMapData.nodes, function(i, n) {
-		var props = { "label": n.label, "labelType": "html", "class": n.class };
-		if(undefined !== n.class && 0 === n.class.indexOf('local'))
-			props.width = 100;
-		g.setNode(i, props);
-	});
-
-	$.each(this.netMapData.links, function(i, l) {
-		if(l.source === undefined || l.target === undefined)
-			return;
-		var props = { lineInterpolate: 'basis' };
- 		if(l.source === 0)
-			props.style = "display:none";
- 		if(l.dPort && l.dPort !== "high") {
-			props.label = (l.dPort.match(/^[0-9]/)?":":"")+l.dPort;
-			props.labelpos = 'r';
-			props.labeloffset = 5;
-		}
-		g.setEdge(l.source, l.target, props);
-	});
-
-	try {
-		var render = new dagreD3.render();
-		render(nodeArea, g);
-	} catch(e) {
-		console.error(e);
-	}
-
-	var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-};
-
-renderers.netmap.prototype.addGraphNode = function(service, direction) {
-	var view = this;
-	var d = this.netMapData;
-
-	if(service[direction].length > 0) {
-		var remote = service[direction].join(",") + direction;
-		var nId = d.nodes.length;
-		var tmp = "";
-		var truncate = false;
-		$.each(service[direction], function(i, name) {
-			if(tmp.includes(name))
-				return;
-			if(name == "")
-				return;
-			if(i < 6) {
-				if (name.match(/^(10\.|172\.(1[6-9]|2.|3[0-1])|192\.168)/))
-					tmp += name+"\n";
-				else if (name.match(/^[0-9]/))
-					tmp += '<a class="resolve" href="javascript:renderers.netmap.prototype.lookupIp(\''+name+'\')" title="Click to resolve IP">'+name+"</a>\n";
-				else {
-					tmp += name+"\n";
-				}
-			}
-			if(i == 6)
-				truncate = true;
-		});
-		tmp = tmp.split(/\n/).sort().filter(s => s != "").join("<br/>");
-		if(truncate)
-			tmp += "<br/><span style='color:#777; font-size:small'>("+(service[direction].length - 6)+" more ...)</span>";
-
-		d.nodes.push({
-			"label": tmp
-		});
-		if(direction === 'in')
-			d.links.push({source: d.nodeToId[service.service], target: nId, dPort: service.outPorts[0], weigth: service[direction].length});
-		else
-			d.links.push({target: d.nodeToId[service.service], source: nId, dPort: service.port, weigth: service[direction].length});
-	} else {
-		if(direction !== 'in')
-			d.links.push({source: 0, target: d.nodeToId[service.service], class: "null", weigth: 0});
-	}
-};
-
-renderers.netmap.prototype.addHost = function(data) {
-	var view = this;
-	var host = this.currentNode;
-	var found = false;
-	var d = this.netMapData = {
-		nodeToId: [],
-		nodes: [],
-		links: []
-	};
-
-	// get connections for this host
-	{
-		var connByService = [];
-		$.each(data.results, function(i, item) {
-			// Reduce connections to per service connections with ids like
-			//   high:::java:::high
-			//   high:::apache2:::80
-			//   ...
-			id = item.ltn+":::"+item.scope+":::"+item.rtn;
-			var s;
-			if(item.scope !== "-")
-				s = item.scope;
-			else
-				return; 	// displaying unknown procs is just useless
-
-			if(!(id in connByService))
-				connByService[id] = { service: s, "port": item.ltn, in: [], out: [], outPorts: [] };
-
-			var resolvedRemote = item.rn;
-			if(item.dir === 'in') {
-				connByService[id].out.push(resolvedRemote);
-			} else {
-				connByService[id].in.push(resolvedRemote);
-				connByService[id].outPorts.push(item.rtn);
-			}
-
-			var remoteName;
-			if(resolvedRemote.match(/^(10\.|172\.(1[6-9]|2.|3[0-1])|192\.168)/))
-				remoteName = resolvedRemote;
-			else if(resolvedRemote.match(/^[0-9]/))
-				remoteName = '<a class="resolve" href="javascript:lookupIp(\''+resolvedRemote+'\')" title="Click to resolve IP">'+resolvedRemote+'</a>';
-			else
-				remoteName = resolvedRemote;
-
-			$('#netMapTable tbody').append('<tr>'+
-				'<td>'+item.scope+'</td>' +
-				'<td>'+item.ln+'</td>' +
-				'<td>'+item.ltn+'</td>' +
-				'<td>'+remoteName+'</td>' +
-				'<td>'+item.rtn+'</td>' +
-				'<td>'+item.dir+'</td>' +
-				'<td>'+item.cnt+'</td>' +
-			'</tr>');
-		});
-
-		// We need a fake node to connect as input for programs without
-		// incoming connections to force the program nodes to the 2nd rank
-		// we will hide this node and its links using CSS
-		//
-		// Node id is 0
-		d.nodes.push({"label": "", class: 'null'});
-
-		for(var id in connByService) {
-			var program = connByService[id].service;
-
-			if(!(program in d.nodeToId)) {
-				var nId = d.nodes.length;
-				d.nodeToId[program] = nId;
-				d.nodes.push({"label": program, class: 'local'});
-			}
-			view.addGraphNode(connByService[id], "in");
-			view.addGraphNode(connByService[id], "out");
-		}
-
-		view.updateGraph();
-	}
-};
-
 renderers.netmap.prototype.render = function(pAPI, id, host) {
 	var r = this;
 
@@ -279,8 +91,58 @@ renderers.netmap.prototype.render = function(pAPI, id, host) {
 			}</pre>`);
 			return;
 		}
-		$(id).html('<svg id="netmap"/>');
-		r.addHost(data);
+
+		var connByService = {};
+		$.each(data.results, function(i, item) {
+			// Reduce connections to per service connections with ids like
+			//   high:::java:::high
+			//   high:::apache2:::80
+			//   ...
+			var id = item.ltn+":::"+item.scope+":::"+item.rtn;
+			var s;
+			if(item.scope !== "-")
+				s = item.scope;
+			else
+				return; 	// displaying unknown procs is just useless
+
+			if(!(id in connByService))
+				connByService[id] = { service: s, "port": item.ltn, in: [], out: [], outPorts: [] };
+
+			var resolvedRemote = item.rn;
+			if(item.dir === 'in') {
+				connByService[id].in.push(resolvedRemote);
+			} else {
+				connByService[id].out.push(resolvedRemote);
+				connByService[id].outPorts.push(item.rtn);
+			}
+		});
+
+		// Generate mermaid diagram markup
+		var t = 'flowchart LR';
+		var counter = 0;
+		console.log(connByService);
+		$.each(connByService, (id, conn) => {
+			if(conn.in.length > 0) {
+				var portInfo = '';
+				if(conn.port && conn.port !== 'high')
+					portInfo = `|:${conn.port}|`;
+				t += `\n   N${counter}[${conn.in.join('\\n')}] --> ${portInfo} N${counter+1}[${conn.service}]`;
+			}
+			if(conn.out.length > 0) {
+				var portInfo = '';
+				if(conn.outPorts.length > 0 && conn.outPorts[0] !== 'high')
+					portInfo = `|:${conn.outPorts[0]}|`;
+				t += `\n   N${counter+1}[${conn.service}] --> ${portInfo} N${counter+2}[${conn.out.join('\\n')}]`;
+			}
+			counter += 3;
+		});
+		try {
+			console.log(t);
+			$(id).html(`<pre class="mermaid">${t}</pre>`);
+			mermaid.run({ querySelector: `${id} pre.mermaid` });
+		} catch(e) {
+			console.error(`Failed mermaid rendering: ${e}`);
+		}
 	}, function(e, probe, h) {
 		$(id).html('ERROR: Fetching connection data failed!');
 		console.error(`probe Error: host=${h} probe=${probe} ${e}`);

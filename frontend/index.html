@@ -18,6 +18,7 @@
 		<div id='visualContainer'>
 			Visualization
 			<select id='renderer'>
+				<option value='netmap'>netmap</option>
 				<option value='perfFlameGraph'>perf flamegraph</option>
 			</select>
 			Host
@@ -63,9 +64,8 @@
 		<p>Websocket endpoint of the WurmTerm backend (e.g. ws://localhost:8181). Please refresh the page after changing this value!</p>
 	</div>
 
-	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
-	<script type="text/javascript" src="node_modules/d3/dist/d3.min.js"></script>
-	<script type="text/javascript" src="node_modules/dagre-d3/dist/dagre-d3.min.js"></script>
+	<script type="text/javascript" src="js/lib/jquery.min.js"></script>
+	<script type="text/javascript" src="js/lib/mermaid.min.js"></script>
 	<script type="text/javascript" src="js/probeapi.js"></script>
 	<script type="text/javascript">
 	var renderers = {};

@@ -3,14 +3,15 @@ var cacheName = 'wurmterm';
 var filesToCache = [
   '/',
   '/index.html',
-  '/settings.html',
   '/css/styles.css',
   '/js/config.js',
   '/js/main.js',
   '/js/probeapi.js',
   '/js/settings.js',
   '/js/renderer/netmap.js',
-  '/js/renderer/perf-flamegraph.js'
+  '/js/renderer/perf-flamegraph.js',
+  '/js/lib/jquery.min.js',
+  '/js/lib/mermaid.min.js'
 ];
 
 /* Start the service worker and cache all of the app's content */
