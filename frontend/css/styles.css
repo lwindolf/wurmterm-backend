@@ -41,6 +41,7 @@ img.emojione {
     background: white;
     margin-bottom: 12px;
     margin-top: 6px;
+    overflow: auto;
 }
 
 #visual .label {
