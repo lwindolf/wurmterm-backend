@@ -6,7 +6,7 @@
    ------------------------------------------------------------------------- */
 
 var _settingsDb;
-var _settings = {};
+var settings = {};
 
 function _settingsDBOpen() {
         return new Promise((resolve, reject) => {
@@ -41,8 +41,8 @@ function settingsGet(name, defaultValue = 'null') {
                                 value = defaultValue;
                         else   
                                 value = evt.target.result.value;
-                        _settings[name] = value;
-                        resolve(value);
+                        settings[name] = value;
+                        resolve();
                 };
                 req.onerror = function(evt) {
                         reject(`Error getting setting ${evt.target.errorCode}`);
@@ -51,13 +51,13 @@ function settingsGet(name, defaultValue = 'null') {
 }
 
 function settingsSet(name, value) {
-        _settings[name] = value;
+        settings[name] = value;
 
         return _settingsDBOpen().then(() => new Promise((resolve, reject) => {
                 var store = _settingsDb.transaction("settings", "readwrite").objectStore("settings");
                 var req;
                 try {
-                        req = store.put({id: name, "value": JSON.stringify(value)});
+                        req = store.put({id: name, "value": value});
                         resolve();
                 } catch (e) {
                         reject(`Error saving setting ${name}: ${e}`);
@@ -73,11 +73,10 @@ function settingsLoad() {
                 }).then(function() {
                         return settingsGet('refreshInterval', '5');
                 }).then(function() {
-                        return settingsGet('probeBlacklist', '[]');
+                        return settingsGet('probeBlacklist', []);
                 }).then(function() {
-                        return settingsGet('enabledProbeTypes', '["localhost", "ssh", "k8s"]');
-                }).then(function() {
-                        resolve(_settings);
+                        settingsDialog();       // fill values in GUI
+                        resolve();
                 }).catch(function() {
                         reject(`Error loading settings: ${e}`);
                 });
@@ -86,7 +85,8 @@ function settingsLoad() {
 
 function settingsInputChanged(ev) {
         var i = ev.target;
-        setting
+        console.log("input changed "+$(i).attr('id'));
+        settingSet($(i).attr('id'), $(i).val());
 }
 
 function settingsProbeToggle(ev) {
@@ -100,14 +100,25 @@ function settingsProbeToggle(ev) {
 }
 
 function settingsDialog() {
-        document.getElementById('refreshInterval').value = settings.refreshInterval;
-
-        $.each(pAPI.probes, function(name, p) {
-                document.getElementById(
-                        (settings.probeBlacklist.includes(name)?'probesDisabled':'probesEnabled')
-                ).innerHTML += `<div class='probe' data-name='${name}'>${name}</div>`;
+        ['refreshInterval', 'backendEndpoint'].forEach(s => {
+                try {
+                        document.getElementById(s).value = settings[s];
+                } catch(e) {
+                        console.error(`Failed loading setting ${s}: ${e}`);
+                }
         });
 
-        $('#settings input').change(ev => settingsSet($(ev.target).attr('id'), $(ev.target).val()));
+        if(pAPI && pAPI.probes) {
+                $.each(pAPI.probes, function(name, p) {
+                        document.getElementById(
+                                (settings.probeBlacklist.includes(name)?'probesDisabled':'probesEnabled')
+                        ).innerHTML += `<div class='probe' data-name='${name}'>${name}</div>`;
+                });
+        }
+
+        $('#settings input').change(ev => {
+                console.log(`${$(ev.target).attr('id')} changed: ${$(ev.target).val()}`);
+                settingsSet($(ev.target).attr('id'), $(ev.target).val());
+        });
         $('#settings .probe').click(settingsProbeToggle);
 }

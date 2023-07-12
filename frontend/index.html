@@ -47,22 +47,20 @@
 		<input type="number" size="6" step="5" id="refreshInterval" name="refreshInterval" min="5">
 		Seconds (min 5s)
 
-		<!--<h2>Allowed probe types</h2>
-	
-		<div><input type="checkbox"> Run SSH probes.</div>
-		<div><input type="checkbox"> Run localhost probes checking the local computer.</div>
-		<div><input type="checkbox"> Auto-discover active kubernetes contexts.</div>
-		-->
 		<h2>Active Probes</h2>
 
-		<p><!--While you can activate different probe types above--> Control which
-		probes you want to run. Toggle their status by clicking.</p>
+		<p>Control which probes you want to run. Toggle their status by clicking.</p>
 
 		Enabled:
                 <div class="settingsBox" id="probesEnabled"></div>
 		Disabled:
                 <div class="settingsBox" id="probesDisabled"></div>
 
+		<h2>Backend Endpoint</h2>
+
+		<input type="text" id="backendEndpoint" size="80">
+
+		<p>Websocket endpoint of the WurmTerm backend (e.g. ws://localhost:8181). Please refresh the page after changing this value!</p>
 	</div>
 
 	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>

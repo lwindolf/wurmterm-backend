@@ -281,8 +281,7 @@ function view(id) {
         if('serviceWorker' in navigator)
                 navigator.serviceWorker.register('./worker.js');
 
-        settingsLoad().then((value) => {
-                settings = value;
+        settingsLoad().then(() => {
                 pAPI = new ProbeAPI(updateHosts, addHistory);
                 view('main');
 

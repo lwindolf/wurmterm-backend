@@ -83,6 +83,10 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 
 	// Perform a given probe and call callback cb for result processing
 	a.probe = function(host, name, cb, errorCb) {
+		// Never run disabled probes
+		if(settings.probeBlacklist.includes(name))
+			return;
+
 		// Never run exclusively local commands elsewhere automatically
 		if(host !== 'localhost' && a.probes[name].localOnly === 'True')
 			return;
