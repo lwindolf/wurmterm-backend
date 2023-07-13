@@ -355,6 +355,21 @@
            }
        }
    },
+   "podman": {
+     "command": "podman ps -a --format '{{.ID}}|||{{.Names}}|||{{.Status}}|||{{.Image}}|||{{.Ports}}'",
+     "refresh": 30,
+     "local"  : "True",
+     "localOnly": "True",
+     "initial": "True",
+     "render" : {
+         "type" : "table",
+         "split": "\\|\\|\\|",
+         "severity": {
+             "warning" : "^(restarting|removing|paused)",
+             "critical": "^dead"
+         }
+     }
+   },
    "docker": {
        "command": "docker info > /dev/null 2>&1 && docker ps -a --format '{{.ID}}|||{{.Names}}|||{{.Status}}|||{{.Image}}|||{{.Ports}}'",
        "if"     : "IPs",
