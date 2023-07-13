@@ -85,8 +85,12 @@ function settingsLoad() {
 
 function settingsInputChanged(ev) {
         var i = ev.target;
-        console.log("input changed "+$(i).attr('id'));
-        settingSet($(i).attr('id'), $(i).val());
+        var id = $(i).attr('id');
+
+        settingSet(id, $(i).val());
+
+        if(id === 'backendEndpoint')
+                pAPI.connect();
 }
 
 function settingsProbeToggle(ev) {
