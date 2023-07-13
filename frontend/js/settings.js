@@ -113,6 +113,8 @@ function settingsDialog() {
         });
 
         if(pAPI && pAPI.probes) {
+                $('#probesDisabled').empty();
+                $('#probesEnabled').empty();
                 $.each(pAPI.probes, function(name, p) {
                         document.getElementById(
                                 (settings.probeBlacklist.includes(name)?'probesDisabled':'probesEnabled')
