@@ -270,6 +270,17 @@ function addHistory(d) {
         });
 }
 
+var clearInfoTimeout;
+function setInfo(str, timeout = 5000) {
+        $('#info').show().html(str);
+
+        if(clearInfoTimeout)
+                clearTimeout(clearInfoTimeout);
+        clearInfoTimeout = setTimeout(function() {
+                $('#info').hide()
+        }, timeout);
+}
+
 function view(id) {
         $('.main').hide();
         $(`#${id}`).show();
@@ -283,6 +294,7 @@ function view(id) {
 
         settingsLoad().then(() => {
                 pAPI = new ProbeAPI(updateHosts, addHistory);
+                pAPI.connect();
                 view('main');
 
                 $('#renderer').on('change', function() {

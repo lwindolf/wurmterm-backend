@@ -12,6 +12,12 @@ body {
     display: none;
 }
 
+#info {
+    background: #eee;
+    color: black;
+    padding: 6px 12px;
+}
+
 .clearfix::after {
     content: "";
     clear: both;

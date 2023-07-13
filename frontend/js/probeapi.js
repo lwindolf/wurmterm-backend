@@ -14,52 +14,71 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	var a = this;
 	a.probes = {};
 	a.hosts = {};
-	a.ws = new WebSocket(settings.backendEndpoint);
-	a.ws.onmessage = function(e) {
+
+	a.connect = function() {
+		a.ws = undefined;
+		setInfo('Connecting backend ...')
 		try {
-			var d = JSON.parse(e.data);
-			if(d.cmd === 'history')
-				a._updateHistoryCb(d.result);
-			if(d.cmd === 'hosts')
-				a._updateHostsCb(d.result);
-			if(d.cmd === 'probes') {
-				a.probes = d.result;
-				settingsDialog();
+			var ws = new WebSocket(settings.backendEndpoint);
+			ws.onerror = function(e) {
+				setInfo(`⛔ Backend websocket error!`);
+				setTimeout(function() {a.connect()}, 5000);
+			};
+			ws.onclose = function(e) {
+				setInfo(`⛔ Backend websocket suddenly closed!`);
+				setTimeout(function() {a.connect()}, 5000);
 			}
-
-			if(d.cmd === 'probe') {
-				var p = a.hosts[d.host].probes[d.probe];
-
-				if(undefined === p) {
-					console.error(`Message ${d} misses probe info or does not match known probe!`);
-				} else {
-					p.updating = false;
-					p.timestamp = Date.now();
-					if(undefined === d.error) {
-						// Always trigger follow probes, serialization is done in backend
-						for(var n in d.next) {
-							a.ws.send(`${d.host}:::${d.next[n]}`);
-						}
-						p.cb(d.probe, d.host, d);
-
-						// Always trigger follow probes, serialization is done in backend
-						for(n in d.next) {
-							a.probe(d.host, d.next[n], p.cb, p.errorCb);
-						}
-					} else {
-						p.errorCb(d.e, d.probe, d.host);
+			ws.onmessage = function(e) {
+				try {
+					var d = JSON.parse(e.data);
+					if(d.cmd === 'history')
+						a._updateHistoryCb(d.result);
+					if(d.cmd === 'hosts')
+						a._updateHostsCb(d.result);
+					if(d.cmd === 'probes') {
+						a.probes = d.result;
+						settingsDialog();
 					}
+
+					if(d.cmd === 'probe') {
+						var p = a.hosts[d.host].probes[d.probe];
+
+						if(undefined === p) {
+							console.error(`Message ${d} misses probe info or does not match known probe!`);
+						} else {
+							p.updating = false;
+							p.timestamp = Date.now();
+							if(undefined === d.error) {
+								// Always trigger follow probes, serialization is done in backend
+								for(var n in d.next) {
+									ws.send(`${d.host}:::${d.next[n]}`);
+								}
+								p.cb(d.probe, d.host, d);
+
+								// Always trigger follow probes, serialization is done in backend
+								for(n in d.next) {
+									a.probe(d.host, d.next[n], p.cb, p.errorCb);
+								}
+							} else {
+								p.errorCb(d.e, d.probe, d.host);
+							}
+						}
+					}
+				} catch(ex) {
+					console.error(`Exception: ${ex}\nMessage: ${JSON.stringify(ex)}`);
 				}
+			};
+			ws.onopen = function(e) {
+				a._updateHosts();
+				ws.send("probes");
+				ws.send("history");
 			}
-		} catch(ex) {
-			console.error(`Exception: ${ex}\nMessage: ${JSON.stringify(e)}`);
+			a.ws = ws;
+		} catch(e) {
+			setInfo(`⛔ Backend websocket setup failed (${e})!`);
+			setTimeout(function() {a.connect()}, 5000);
 		}
 	};
-	a.ws.onopen = function(e) {
-		a._updateHosts();
-		a.ws.send("probes");
-		a.ws.send("history");
-	}
 
 	a.getProbeByName = function(name) {
 	    return a.probes[name];
@@ -71,7 +90,9 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	// Setup periodic host update fetch and callback
 	a._updateHostsCb = updateHostsCb;
 	a._updateHosts = function() {
-		a.ws.send(`hosts`);
+		try {
+			a.ws.send(`hosts`);
+		} catch(e) { }
 
 		if(a._updateHostsTimeout)
                 	clearTimeout(a._updateHostsTimeout);
