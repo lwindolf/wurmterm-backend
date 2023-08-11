@@ -17,17 +17,17 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 
 	a.connect = function() {
 		a.ws = undefined;
-		setInfo('Connecting backend ...')
+		setInfo('Connecting backend ...');
 		try {
 			var ws = new WebSocket(settings.backendEndpoint);
 			ws.onerror = function(e) {
 				setInfo(`⛔ Backend websocket error!`);
-				setTimeout(function() {a.connect()}, 5000);
+				setTimeout(function() {a.connect();}, 5000);
 			};
 			ws.onclose = function(e) {
 				setInfo(`⛔ Backend websocket suddenly closed!`);
-				setTimeout(function() {a.connect()}, 5000);
-			}
+				setTimeout(function() {a.connect();}, 5000);
+			};
 			ws.onmessage = function(e) {
 				try {
 					var d = JSON.parse(e.data);
@@ -72,11 +72,11 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 				a._updateHosts();
 				ws.send("probes");
 				ws.send("history");
-			}
+			};
 			a.ws = ws;
 		} catch(e) {
 			setInfo(`⛔ Backend websocket setup failed (${e})!`);
-			setTimeout(function() {a.connect()}, 5000);
+			setTimeout(function() {a.connect();}, 5000);
 		}
 	};
 

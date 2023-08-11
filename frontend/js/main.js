@@ -277,7 +277,7 @@ function setInfo(str, timeout = 5000) {
         if(clearInfoTimeout)
                 clearTimeout(clearInfoTimeout);
         clearInfoTimeout = setTimeout(function() {
-                $('#info').hide()
+                $('#info').hide();
         }, timeout);
 }
 

@@ -122,14 +122,15 @@ renderers.netmap.prototype.render = function(pAPI, id, host) {
 		var counter = 0;
 		console.log(connByService);
 		$.each(connByService, (id, conn) => {
+			var portInfo;
 			if(conn.in.length > 0) {
-				var portInfo = '';
+				portInfo = '';
 				if(conn.port && conn.port !== 'high')
 					portInfo = `|:${conn.port}|`;
 				t += `\n   N${counter}[${conn.in.join('\\n')}] --> ${portInfo} N${counter+1}[${conn.service}]`;
 			}
 			if(conn.out.length > 0) {
-				var portInfo = '';
+				portInfo = '';
 				if(conn.outPorts.length > 0 && conn.outPorts[0] !== 'high')
 					portInfo = `|:${conn.outPorts[0]}|`;
 				t += `\n   N${counter+1}[${conn.service}] --> ${portInfo} N${counter+2}[${conn.out.join('\\n')}]`;
