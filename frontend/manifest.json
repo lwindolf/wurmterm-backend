@@ -19,5 +19,15 @@
             "sizes": "512x512",
             "type": "image/png"
           }
+        ],
+        "protocol_handlers": [
+          {
+            "protocol": "web+wurmtermcmd",
+            "url": "/?cmd=%s"
+          },
+          {
+            "protocol": "web+wurmtermnotebook",
+            "url": "/?notebook=%s"
+          }
         ]
       }
