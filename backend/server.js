@@ -226,7 +226,7 @@ var corsOptions = {
 	origin: "*",
 	optionsSuccessStatus: 200,
 	methods: "GET, PUT"
- }
+};
     
 app.use(cors(corsOptions));
 
