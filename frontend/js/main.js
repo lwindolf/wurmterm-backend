@@ -292,6 +292,8 @@ function view(id) {
         if('serviceWorker' in navigator)
                 navigator.serviceWorker.register('./worker.js');
 
+        navigator.storage.persist();             
+                
         settingsLoad().then(() => {
                 pAPI = new ProbeAPI(updateHosts, addHistory);
                 pAPI.connect();

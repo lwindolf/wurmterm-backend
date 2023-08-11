@@ -68,19 +68,19 @@ function settingsSet(name, value) {
 /* Load all known settings */
 function settingsLoad() {
         return new Promise((resolve, reject) => {
-                _settingsDBOpen().then(function() {
-                        return settingsGet('backendEndpoint', `ws://${host}:${port}/`);
-                }).then(function() {
-                        return settingsGet('refreshInterval', '5');
-                }).then(function() {
-                        return settingsGet('probeBlacklist', []);
-                }).then(function() {
+                _settingsDBOpen()
+                .then(() => fetch('default.json'))
+                .then((response) => response.json())
+                .then((config) => settingsGet('backendEndpoint', `ws://${config.server.host}:${config.server.port}/`))
+                .then(() => settingsGet('refreshInterval', '5'))
+                .then(() => settingsGet('probeBlacklist', []))
+                .then(() => {
                         settingsDialog();       // fill values in GUI
                         resolve();
-                }).catch(function() {
+                }).catch(function(e) {
                         reject(`Error loading settings: ${e}`);
                 });
-        })
+        });
 }
 
 function settingsInputChanged(ev) {

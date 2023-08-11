@@ -17,10 +17,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-const http = require("http"),
-      express = require("express"),
+const http = require('http'),
+      config = require('config'),
+      express = require('express'),
       cors = require('cors'),
-      path = require("path"),
+      path = require('path'),
       fs = require('fs'),
       app = express(),
       StatefulProcessCommandProxy = require("stateful-process-command-proxy"),
@@ -28,7 +29,6 @@ const http = require("http"),
 
 const { exec } = require("child_process");
 
-eval(fs.readFileSync('config.js')+'');
 var probes = require('./probes/default.json');
 var proxies = {};
 var filters = {};
@@ -230,7 +230,7 @@ var corsOptions = {
     
 app.use(cors(corsOptions));
 
-const server = http.createServer(app).listen(port);
+const server = http.createServer(app).listen(config.get('server.port'));
 const wsServer = new WebSocketServer({
     httpServer: server
 });
@@ -265,4 +265,4 @@ wsServer.on('request', function(request) {
     });
 });
 
-console.log(`Server running at ws://127.0.0.1:${port}/`);
+console.log(`Server running at ws://${config.get('server.host')}:${config.get('server.port')}/`);
