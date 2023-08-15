@@ -13,6 +13,7 @@
         "jshint": "^2.13.6",
         "mermaid": "^10.2.4",
         "promise": "~8.0.0",
+        "starboard-notebook": "^0.15.7",
         "websocket": "^1.0.34"
     },
     "scripts": {

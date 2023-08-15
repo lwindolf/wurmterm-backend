@@ -12,8 +12,9 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	arguments.callee._singletonInstance = this;
 
 	var a = this;
-	a.probes = {};
-	a.hosts = {};
+	a.probes = {};		// definition of probes
+	a.hosts = {};		// callbacks for probe commands
+	a.runs = {};		// promises for dedicated command runs (e.g. from notebook)
 
 	a.connect = function() {
 		a.ws = undefined;
@@ -38,6 +39,19 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 					if(d.cmd === 'probes') {
 						a.probes = d.result;
 						settingsDialog();
+					}
+
+					if(d.cmd === 'run') {
+						var p = a.runs[d.id];
+						
+						if(undefined === p) {
+							console.error(`Message ${d} misses id info or does not match known run!`);
+						} else {
+							if(undefined === d.error)
+								p.resolve(d);
+							else
+								p.reject(d);
+						}
 					}
 
 					if(d.cmd === 'probe') {
@@ -100,6 +114,14 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 		a._updateHostsTimeout = setTimeout(function () {
 			a._updateHosts();
 		}, settings.refreshInterval * 1000);
+	};
+
+	// Run a given command and return a promise for result processing
+	a.run = function(host, id, cmd) {
+		return new Promise((resolve, reject) => {
+			a.runs[id] = { resolve: resolve, reject: reject };
+			a.ws.send(`run ${host}:::${id}:::${cmd}`);
+		});
 	};
 
 	// Perform a given probe and call callback cb for result processing

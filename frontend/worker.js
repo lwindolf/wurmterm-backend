@@ -4,7 +4,6 @@ var filesToCache = [
   '/',
   '/index.html',
   '/css/styles.css',
-  '/js/config.js',
   '/js/main.js',
   '/js/probeapi.js',
   '/js/settings.js',

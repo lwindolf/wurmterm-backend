@@ -60,7 +60,6 @@ function get_history(connection) {
 		}));
 	});
     } catch(e) {
-	done(e);
 	return {cmd: 'history', error:e};
     }
 }
@@ -84,14 +83,12 @@ function get_hosts(connection) {
 			}));
 		});
 	} catch(e) {
-		done(e);
 		return {cmd: 'hosts', error:e};
 	}
 }
 
+// Return all probes including initial flag so a frontend knows where to start
 function get_probes(connection) {
-   // Return all probes and initial flag so a frontend knows
-   // where to start
    var output = {};
    Object.keys(probes).forEach(function(probe) {
        var p = probes[probe];
@@ -156,12 +153,7 @@ function runFilter(connection, msg) {
     });
 }
 
-function probeWS(connection, host, probe) {
-    try {
-	if(!(probe in probes)) {
-		return {host: host, probe: probe, error:'No such probe'};
-	}
-
+function getProxy(host) {
 	if(undefined === proxies[host]) {
 	    proxies[host] = new StatefulProcessCommandProxy({
 		name: "proxy_"+host,
@@ -186,7 +178,16 @@ function probeWS(connection, host, probe) {
 		},
 	    });
 	}
-	proxies[host].executeCommands([probes[probe].command]).then(function(res) {
+	return proxies[host];
+}
+
+function probeWS(connection, host, probe) {
+    try {
+	if(!(probe in probes)) {
+		return {host: host, probe: probe, error:'No such probe'};
+	}
+
+	getProxy(host).executeCommands([probes[probe].command]).then(function(res) {
 	    var msg = {
 		cmd    : 'probe',
 	        host   : host,
@@ -211,17 +212,37 @@ function probeWS(connection, host, probe) {
     		connection.sendUTF(JSON.stringify(msg));
     	    }
 	    return;
-	}).catch(function(error) {
-	    done(e);
+	}).catch(function(e) {
 	    return {cmd: 'probe', host: host, probe: probe, error:e};
 	});
     } catch(e) {
-	done(e);
         return {cmd: 'probe', host: host, probe: probe, error:e};
     }
 }
 
-// Setup CORS '*' to support a PWA on mobile or some webserver
+function run(connection, host, id, cmd) {
+    try {
+	getProxy(host).executeCommands([cmd]).then(function(res) {
+	    var msg = {
+		cmd    : 'run',
+                shell  : cmd,
+	        host   : host,
+		id     : id,
+		stdout : res[0].stdout,
+		stderr : res[0].stderr
+	    };
+
+   	    connection.sendUTF(JSON.stringify(msg));
+	    return;
+	}).catch(function(e) {
+	    return {cmd: 'run', host: host, id: id, error:e};
+	});
+    } catch(e) {
+        return {cmd: 'run', host: host, id: id, error:e};
+    }
+}
+
+// Setup CORS '*' to support PWAs
 var corsOptions = {
 	origin: "*",
 	optionsSuccessStatus: 200,
@@ -240,22 +261,30 @@ wsServer.on('request', function(request) {
     const connection = request.accept(null, request.origin);
     connection.on('message', function(message) {
 	// General syntax is "<command>[ <parameters>]"
-	var cmd    = message.utf8Data.split(/ /)[0];
-	var params = message.utf8Data.split(/ /)[1];
+	var m = message.utf8Data.match(/^(\w+)( (.+))?$/);
+	if(m) {
+		var cmd    = m[1];
+		var params = m[3];
 
-	if(cmd === 'hosts')
-		return get_hosts(connection);
-	if(cmd === 'probes')
-		return get_probes(connection);
-	if(cmd === 'history')
-		return get_history(connection);
+		if(cmd === 'hosts')
+			return get_hosts(connection);
+		if(cmd === 'probes')
+			return get_probes(connection);
+		if(cmd === 'history')
+			return get_history(connection);
 
-	if(cmd === 'probe') {
-		// we expect message in format "probe <host>:::<probe>"
-		var tmp = params.split(/:::/);
-		return probeWS(connection, tmp[0], tmp[1]);
+		if(cmd === 'run') {
+			// we expect message in format "run <host>:::<id>:::<cmd>"
+			var tmp = params.split(/:::/);
+			return run(connection, tmp[0], tmp[1], tmp[2]);
+		}
+
+		if(cmd === 'probe') {
+			// we expect message in format "probe <host>:::<probe>"
+			var tmp = params.split(/:::/);
+			return probeWS(connection, tmp[0], tmp[1]);
+		}
 	}
-
 	connection.sendUTF(JSON.stringify({
 		cmd: cmd,
 		error: 'Unsupported command'

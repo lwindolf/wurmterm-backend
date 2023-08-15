@@ -4,6 +4,8 @@
 	<meta charset="UTF-8">
 	<title>WurmTerm</title>
 	<link rel="stylesheet" type='text/css' href='css/styles.css'/>
+	<link rel="stylesheet" type='text/css' href='starboard-notebook.css'/>
+
 	<link rel="manifest" href="manifest.json">
 	<meta name="theme-color" content="white"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +14,7 @@
 	<div id='menu'>
 		<span class='title'>🐛 WurmTerm</span>
 		[ <a href='javascript:view("main")'>Home</a> ]
+		[ <a href='javascript:view("notebook")'>Notebook</a> ]
 		[ <a href='javascript:view("settings")'>Settings</a> ]
 	</div>
 	
@@ -44,6 +47,13 @@
 		</div>
 	</div>
 
+	<div class='main' id='notebook'>
+		Host <input type='text' id='notebook-host' list='notebook-hosts' placeholder='localhost or SSH host' value='localhost'/>
+		<datalist id='notebook-hosts'>
+			<option value='localhost'>
+		</datalist>		
+	</div>
+
 	<div class='main' id='settings'>
 		<h2>Refresh Interval</h2>
 
@@ -73,10 +83,21 @@
 	<script type="text/javascript" src="js/probeapi.js"></script>
 	<script type="text/javascript">
 	var renderers = {};
+	window.initialNotebookContent = `
+# %% [markdown]
+## Running Commands with Wurmterm
+
+This is a WurmTerm interactive notebook (similar to Jupyter notebooks). Try to trigger a shell 
+command using the following cell, by clicking the play button on the left.
+
+# %% [shell]
+ls -a`;
 	</script>
 	<script type="text/javascript" src="js/renderer/netmap.js"></script>
 	<script type="text/javascript" src="js/renderer/perf-flamegraph.js"></script>
 	<script type="text/javascript" src="js/settings.js"></script>
+	<script type="text/javascript" src="starboard-notebook.js"></script>
+
 	<script type="text/javascript" src="js/main.js"></script>
 </body>
 </html>
