@@ -275,18 +275,18 @@ wsServer.on('request', function(request) {
 
 		if(cmd === 'run') {
 			// we expect message in format "run <host>:::<id>:::<cmd>"
-			var tmp = params.split(/:::/);
+			let tmp = params.split(/:::/);
 			return run(connection, tmp[0], tmp[1], tmp[2]);
 		}
 
 		if(cmd === 'probe') {
 			// we expect message in format "probe <host>:::<probe>"
-			var tmp = params.split(/:::/);
+			let tmp = params.split(/:::/);
 			return probeWS(connection, tmp[0], tmp[1]);
 		}
 	}
 	connection.sendUTF(JSON.stringify({
-		cmd: cmd,
+		cmd: m,
 		error: 'Unsupported command'
 	}));
     });
