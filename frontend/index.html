@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<title>WurmTerm</title>
 	<link rel="stylesheet" type='text/css' href='css/styles.css'/>
-	<link rel="stylesheet" type='text/css' href='starboard-notebook.css'/>
+	<link rel="stylesheet" type='text/css' href='node_modules/starboard-notebook/dist/starboard-notebook.css'/>
 
 	<link rel="manifest" href="manifest.json">
 	<meta name="theme-color" content="white"/>
@@ -85,37 +85,28 @@
 		<p>Websocket endpoint of the WurmTerm backend (e.g. ws://localhost:8181). Please refresh the page after changing this value!</p>
 	</div>
 
-	<script type="text/javascript" src="js/lib/jquery.min.js"></script>
-	<script type="text/javascript">
-		window.initialNotebookContent = `
-# %% [markdown]
-## Running Commands with Wurmterm
-
-This is a WurmTerm interactive notebook (similar to Jupyter notebooks). Try to trigger a shell 
-command using the following cell, by clicking the play button on the left.
-
-# %% [shell]
-echo "Enter a command here!"
-# %% [markdown]
-## Examples
-
-Running processes
-
-# %% [shell]
-ps -xawf | head -20
-# %% [markdown]
-Failed systemd units
-
-# %% [shell]
-systemctl --failed`;
-	</script>
-	<script type="text/javascript" src="starboard-notebook.js"></script>
 	<script type="module">
 		import { setupApp } from './js/app.js';
+		import './node_modules/jquery/dist/jquery.min.js';
 
-		(function() {
+		/**
+		 * Workaround for the "Automatic publicPath is not supported in this browser" fail
+		 *
+		 * See https://github.com/cypress-io/cypress/issues/18435 for more
+		 * details. Should be removed when cypress switches to webpack 5.
+		 */
+		var scripts = document.getElementsByTagName("script");
+		scripts[scripts.length - 1].src = ' ';  // yes, thats a single space and not the empty string
+
+		(async function() {
 			'use strict';
 
+			let response = await fetch("/notebooks/default.md");
+			window.initialNotebookContent = await response.text();			
+
+			/* Async module load to ensure above webpack workaround is done 
+			   and we have loaded the initial notebook markdown */
+			await import('./node_modules/starboard-notebook/dist/starboard-notebook.js');
 			setupApp();
 		})();
 	</script>

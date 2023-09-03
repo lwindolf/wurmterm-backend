@@ -1,7 +1,7 @@
 // vim: set ts=4 sw=4:
 /* jshint esversion: 6 */
 
-import * as mermaid from '../lib/mermaid.min.js';
+import '../../node_modules/mermaid/dist/mermaid.min.js';
 
 window.mermaid.initialize({ startOnLoad: false });
 

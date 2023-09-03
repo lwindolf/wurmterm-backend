@@ -36,11 +36,12 @@ To always start the backend consider adding above line to your `~/.profile`.
 To start the frontend locally
 
     cd frontend
-    python3 -m http.server
+    npx serve -S
 
 Alternatively host the frontend code on a website of your choice by
-providing proper CORS headers in your webserver config to allow the
-PWA to access the local backend.
+providing proper CORS, COEP, COOP headers in your webserver config to allow 
+the PWA to access the local backend and to allow iframe same origin embedding
+for the notebook code.
 
 ## Remote Host Monitoring via SSH
 
