@@ -30,6 +30,6 @@ function perfRenderer(pAPI, id, host) {
             console.error(`probe Error: host=${h} probe=${probe} ${e}`);
         });
     });
-};
+}
 
 export { perfRenderer };

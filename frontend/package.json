@@ -17,7 +17,7 @@
         "websocket": "^1.0.34"
     },
     "scripts": {
-        "test": "jshint *.js js/*.js js/renderer/*.js",
+        "test": "jshint worker.js js/*.js js/renderer/*.js",
         "start": "python3 -m http.server"
     }
 }

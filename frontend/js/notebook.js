@@ -1,8 +1,7 @@
 // vim: set ts=4 sw=4:
-/* jshint esversion: 6 */
+/* jshint esversion: 8 */
 
 import { ProbeAPI } from './probeapi.js';
-// import * as runtime from '../starboard-notebook.js';
 
 // Starboard-Notebook has no native shell type, so we register one
 // see CoffeeScript example: https://starboard.gg/gz/coffeescript-custom-cell-type-n1VJRGC
@@ -15,7 +14,7 @@ function registerStarboardShellCellType() {
                 name: "Shell",
                 cellType: ["shell"],
                 createHandler: (cell, runtime) => new ShellCellHandler(cell, runtime),
-        }
+        };
 
         class ShellCellHandler {
                 constructor(cell, runtime) {
@@ -57,7 +56,7 @@ function registerStarboardShellCellType() {
                                         method: "result",
                                         data: [val]
                                 });
-                                return val
+                                return val;
                         }).catch((d) => {
                                 this.outputElement.addEntry({
                                         method: "error",

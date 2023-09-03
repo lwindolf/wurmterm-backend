@@ -17,7 +17,7 @@ function _ProbeAPI() {
 		a.ws = undefined;
 		setInfo('Connecting backend ...');
 		try {
-			var ws = new WebSocket(settings.backendEndpoint);
+			let ws = new WebSocket(settings.backendEndpoint);
 			ws.onerror = function(e) {
 				setInfo(`⛔ Backend websocket error!`);
 				setTimeout(function() {a.connect();}, 5000);
@@ -28,7 +28,7 @@ function _ProbeAPI() {
 			};
 			ws.onmessage = function(e) {
 				try {
-					var d = JSON.parse(e.data);
+					let d = JSON.parse(e.data);
 					if(d.cmd === 'history')
 						addHistory(d.result);
 					if(d.cmd === 'hosts')
@@ -39,7 +39,7 @@ function _ProbeAPI() {
 					}
 
 					if(d.cmd === 'run') {
-						var p = a.runs[d.id];
+						let p = a.runs[d.id];
 						
 						if(undefined === p) {
 							console.error(`Message ${d} misses id info or does not match known run!`);
@@ -52,7 +52,7 @@ function _ProbeAPI() {
 					}
 
 					if(d.cmd === 'probe') {
-						var p = a.hosts[d.host].probes[d.probe];
+						let p = a.hosts[d.host].probes[d.probe];
 
 						if(undefined === p) {
 							console.error(`Message ${d} misses probe info or does not match known probe!`);
@@ -130,7 +130,7 @@ function _ProbeAPI() {
 		if(undefined === a.hosts[host].probes[name])
 			a.hosts[host].probes[name] = {};
 
-		var p = a.hosts[host].probes[name];
+		let p = a.hosts[host].probes[name];
 		p.updating = true;
 		p.timestamp = Date.now();
 

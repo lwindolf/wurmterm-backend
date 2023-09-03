@@ -58,7 +58,7 @@ function parse(results) {
 	});
 
 	return { 'results': results };
-};
+}
 
 // IP lookup popup helper
 function lookup(ip) {
@@ -72,7 +72,7 @@ function lookup(ip) {
 		      "\nPostal: "+data.postal
 		);
 	});
-};
+}
 
 function netmapRenderer(pAPI, id, host) {
 	$(id).html('<i>Loading connections...</i>');
@@ -146,6 +146,6 @@ function netmapRenderer(pAPI, id, host) {
 		$(id).html('ERROR: Fetching connection data failed!');
 		console.error(`probe Error: host=${h} probe=${probe} ${e}`);
 	});
-};
+}
 
 export { netmapRenderer };
