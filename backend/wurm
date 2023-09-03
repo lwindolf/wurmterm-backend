@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Start nodejs server if needed, always start in background
-if ! pgrep -f WurmTermBackend >/dev/null; then
+if ! pgrep -f WurmTermBacken >/dev/null; then
    (nohup node server.js >/dev/null 2>&1 &)
+else
+   echo "Already running."
 fi

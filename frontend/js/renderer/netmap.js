@@ -1,18 +1,18 @@
 // vim: set ts=4 sw=4:
 /* jshint esversion: 6 */
 
+import * as mermaid from '../lib/mermaid.min.js';
+
+window.mermaid.initialize({ startOnLoad: false });
+
 /* IPv4 only netmap renderer
 
    A view showing per-service connections for a single host in a
    directed graph with inbound and outbound connections for the host
    allowing to traverse the connections */
 
-renderers.netmap = function netmapRenderer() {
-	mermaid.initialize({ startOnLoad: false });
-};
-
 // parse netstat output
-renderers.netmap.prototype.parse = function(results) {
+function parse(results) {
 	var listen_port_to_program = {};
 
 	results = results.split(/\n/)
@@ -61,7 +61,7 @@ renderers.netmap.prototype.parse = function(results) {
 };
 
 // IP lookup popup helper
-renderers.netmap.prototype.lookupIp = function(ip) {
+function lookup(ip) {
 	$.getJSON('http://ipinfo.io/'+ip, function(data){
 		alert("IP: "+data.ip+
 		      "\nName: "+data.hostname+
@@ -74,13 +74,11 @@ renderers.netmap.prototype.lookupIp = function(ip) {
 	});
 };
 
-renderers.netmap.prototype.render = function(pAPI, id, host) {
-	var r = this;
-
+function netmapRenderer(pAPI, id, host) {
 	$(id).html('<i>Loading connections...</i>');
 
 	pAPI.probe(host, 'netstat-a', function(probe, h, input) {
-		var data = r.parse(input.stdout);
+		var data = parse(input.stdout);
 		if(0 === data.results.length) {
 			$(id).html(`<h3>There are currently no connections on this host!</h3><p>Connection data:</p><pre>${
 				input.replace(/&/g, "&amp;")
@@ -140,7 +138,7 @@ renderers.netmap.prototype.render = function(pAPI, id, host) {
 		try {
 			console.log(t);
 			$(id).html(`<pre class="mermaid">${t}</pre>`);
-			mermaid.run({ querySelector: `${id} pre.mermaid` });
+			window.mermaid.run({ querySelector: `${id} pre.mermaid` });
 		} catch(e) {
 			console.error(`Failed mermaid rendering: ${e}`);
 		}
@@ -149,3 +147,5 @@ renderers.netmap.prototype.render = function(pAPI, id, host) {
 		console.error(`probe Error: host=${h} probe=${probe} ${e}`);
 	});
 };
+
+export { netmapRenderer };

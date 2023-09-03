@@ -13,9 +13,9 @@
 <body>
 	<div id='menu'>
 		<span class='title'>🐛 WurmTerm</span>
-		[ <a href='javascript:view("main")'>Home</a> ]
-		[ <a href='javascript:view("notebook")'>Notebook</a> ]
-		[ <a href='javascript:view("settings")'>Settings</a> ]
+		[ <a data-view='main'>Home</a> ]
+		[ <a data-view='notebook'>Notebook</a> ]
+		[ <a data-view='settings'>Settings</a> ]
 	</div>
 	
 	<div class='main' id='info'>
@@ -51,7 +51,14 @@
 		Host <input type='text' id='notebook-host' list='notebook-hosts' placeholder='localhost or SSH host' value='localhost'/>
 		<datalist id='notebook-hosts'>
 			<option value='localhost'>
-		</datalist>		
+		</datalist>
+
+		Notebook <input type='text' id='notebook-name' list='notebook-names' placeholder='Name of a notebook' value='default'/>
+		<datalist id='notebook-names'>
+			<!-- FIXME load list automatically -->
+			<option value='default'>
+			<option value='systemd'>
+		</datalist>
 	</div>
 
 	<div class='main' id='settings'>
@@ -79,11 +86,8 @@
 	</div>
 
 	<script type="text/javascript" src="js/lib/jquery.min.js"></script>
-	<script type="text/javascript" src="js/lib/mermaid.min.js"></script>
-	<script type="text/javascript" src="js/probeapi.js"></script>
 	<script type="text/javascript">
-	var renderers = {};
-	window.initialNotebookContent = `
+		window.initialNotebookContent = `
 # %% [markdown]
 ## Running Commands with Wurmterm
 
@@ -91,13 +95,29 @@ This is a WurmTerm interactive notebook (similar to Jupyter notebooks). Try to t
 command using the following cell, by clicking the play button on the left.
 
 # %% [shell]
-ls -a`;
-	</script>
-	<script type="text/javascript" src="js/renderer/netmap.js"></script>
-	<script type="text/javascript" src="js/renderer/perf-flamegraph.js"></script>
-	<script type="text/javascript" src="js/settings.js"></script>
-	<script type="text/javascript" src="starboard-notebook.js"></script>
+echo "Enter a command here!"
+# %% [markdown]
+## Examples
 
-	<script type="text/javascript" src="js/main.js"></script>
+Running processes
+
+# %% [shell]
+ps -xawf | head -20
+# %% [markdown]
+Failed systemd units
+
+# %% [shell]
+systemctl --failed`;
+	</script>
+	<script type="text/javascript" src="starboard-notebook.js"></script>
+	<script type="module">
+		import { setupApp } from './js/app.js';
+
+		(function() {
+			'use strict';
+
+			setupApp();
+		})();
+	</script>
 </body>
 </html>

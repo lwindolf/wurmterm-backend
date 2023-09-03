@@ -1,16 +1,13 @@
 // vim: set ts=4 sw=4:
 /* jshint esversion: 6 */
 
+import { updateHosts, addHistory, setInfo } from './app.js';
+import { settings, settingsDialog } from './settings.js';
+
 /* Probe API singleton, allowing one host being probed at a time.
    Manages auto-updates, host discovery and probe dependency tree  */
 
-function ProbeAPI(updateHostsCb, updateHistoryCb) {
-	if(arguments.callee._singletonInstance) {
-		return arguments.callee._singletonInstance;
-	}
-
-	arguments.callee._singletonInstance = this;
-
+function _ProbeAPI() {
 	var a = this;
 	a.probes = {};		// definition of probes
 	a.hosts = {};		// callbacks for probe commands
@@ -33,9 +30,9 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 				try {
 					var d = JSON.parse(e.data);
 					if(d.cmd === 'history')
-						a._updateHistoryCb(d.result);
+						addHistory(d.result);
 					if(d.cmd === 'hosts')
-						a._updateHostsCb(d.result);
+						updateHosts(d.result);
 					if(d.cmd === 'probes') {
 						a.probes = d.result;
 						settingsDialog();
@@ -98,11 +95,7 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 	    return a.probes[name];
 	};
 
-	// History CB is a one-shot only
-	a._updateHistoryCb = updateHistoryCb;
-
 	// Setup periodic host update fetch and callback
-	a._updateHostsCb = updateHostsCb;
 	a._updateHosts = function() {
 		try {
 			a.ws.send(`hosts`);
@@ -193,3 +186,7 @@ function ProbeAPI(updateHostsCb, updateHistoryCb) {
 		});
 	};
 }
+
+const ProbeAPI = new _ProbeAPI();
+
+export { ProbeAPI };

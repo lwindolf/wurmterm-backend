@@ -36,7 +36,7 @@ img.emojione {
 
 #visualizedHost {
     font-weight: bold;
-    color: white;
+    color: #333;
 }
 #visualContainer {
     display: none;
@@ -114,7 +114,7 @@ img.emojione {
 }
 
 #nodes .node .name {
-    color:white;
+    color:#333;
     font-weight:bold;
     cursor:pointer;
 }
@@ -238,6 +238,7 @@ span.severity_warning {
 #menu a {
     color: #AAC;
     text-decoration: none;
+    cursor: pointer;
 }
 #menu a:hover {
     text-decoration: underline;
@@ -280,7 +281,7 @@ span.severity_warning {
 
 #settings .probe {
     display: inline-block;
-    background: #444;
+    background: #bbb;
     margin:3px;
     padding:3px 6px;
     border-radius: 3px;

@@ -1,12 +1,19 @@
 // vim: set ts=4 sw=4:
-/*jshint esversion: 6 */
+/* jshint esversion: 6 */
 
-//import sb{ StarboardNotebookElement } from "./lib/starboard-notebook.js";
+import { registerStarboardShellCellType } from './notebook.js';
+import { settingsDialog, settingsLoad } from './settings.js';
+import { ProbeAPI } from './probeapi.js';
 
-var settings;
+import { perfRenderer } from './renderer/perf-flamegraph.js';
+import { netmapRenderer } from './renderer/netmap.js';
+
 var hosts = {};
+var renderers = {
+        'netmap': netmapRenderer,
+        'perfFlameGraph': perfRenderer
+};
 var extraHosts = [];    // list of hosts manually added
-var pAPI;
 
 function multiMatch(text, severities) {
         var matchResult;
@@ -64,7 +71,7 @@ function renderTable(d) {
 }
 
 function triggerProbe(host, name) {
-        pAPI.probe(host, name, probeResultCb, probeErrorCb);
+        ProbeAPI.probe(host, name, probeResultCb, probeErrorCb);
 }
 
 function probeErrorCb(e, probe, h) {
@@ -112,8 +119,7 @@ function visualizeHost(host, renderer) {
         $('#renderer').val(renderer);
         $('#visual').empty().height(600);
         try {
-                var r = new renderers[renderer]();
-                r.render(pAPI, '#visual', host);
+                renderers[renderer](ProbeAPI, '#visual', host);
         } catch(e) {
                 $('#visual').html('ERROR: Rendering failed!');
                 console.error(`render Error: host=${host} ${e}`);
@@ -121,7 +127,7 @@ function visualizeHost(host, renderer) {
 }
 
 function addHost(h) {
-        pAPI.start(h, probeResultCb, probeErrorCb);
+        ProbeAPI.start(h, probeResultCb, probeErrorCb);
 
         var hId = strToId(h);
         if(!$(`#${hId}`).length) {
@@ -234,7 +240,7 @@ function updateHosts(d) {
                 var h = $(n).data('host');
                 if(!d.includes(h) && !extraHosts.includes(h) && (h !== 'localhost')) {
                         console.log('stopping '+h);
-                        pAPI.stop(h);
+                        ProbeAPI.stop(h);
                         $(n).addClass('disconnected');
                 }
         });
@@ -294,105 +300,22 @@ function view(id) {
                 $('starboard-notebook').show();
         else
                 $('starboard-notebook').hide();
+
+        if('settings' === id)
+                settingsDialog();
 }
 
-// Starboard-Notebook has no native shell type, so we register one
-// see CoffeeScript example: https://starboard.gg/gz/coffeescript-custom-cell-type-n1VJRGC
-function registerStarboardShellCellType() {
-        const StarboardTextEditor = runtime.exports.elements.StarboardTextEditor;
-        const ConsoleOutputElement = runtime.exports.elements.ConsoleOutputElement;
-        const cellControlsTemplate = runtime.exports.templates.cellControls;
-
-        const SHELL_CELL_TYPE_DEFINITION = {
-                name: "Shell",
-                cellType: ["shell"],
-                createHandler: (cell, runtime) => new ShellCellHandler(cell, runtime),
-        }
-
-        class ShellCellHandler {
-                constructor(cell, runtime) {
-                        this.cell = cell;
-                        this.runtime = runtime;
-                }
-
-                getControls() {
-                        const runButton = {
-                        icon: "bi bi-play-circle",
-                        tooltip: "Run",
-                        callback: () => this.runtime.controls.emit({id: this.cell.id, type: "RUN_CELL"}),
-                        };
-                        return cellControlsTemplate({ buttons: [runButton] });
-                }
-
-                attach(params) {
-                        this.elements = params.elements;
-                        const topElement = this.elements.topElement;
-                        lit.render(this.getControls(), this.elements.topControlsElement);
-
-                        this.editor = new StarboardTextEditor(this.cell, this.runtime, {language: "shell"});
-                        topElement.appendChild(this.editor);
-                }
-
-                async run() {
-                        const cmd = this.cell.textContent;
-                        this.outputElement = new ConsoleOutputElement();
-                        
-                        lit.render(html`${this.outputElement}`, this.elements.bottomElement);
-
-                        pAPI.run($('#notebook-host').val(), 5, cmd).then((d) => {
-                                const val = d.stdout+"\n"+d.stderr;
-                                window.$_ = val;
-                                this.outputElement.addEntry({
-                                        method: "result",
-                                        data: [val]
-                                });
-                                return val
-                        }).catch((d) => {
-                                this.outputElement.addEntry({
-                                        method: "error",
-                                        data: [d.error]
-                                });
-                        });
-
-                        return undefined;
-                }
-
-                focusEditor() {
-                        this.editor.focus();
-                }
-
-                async dispose() {
-                        this.editor.remove();
-                }  
-        }
-
-        runtime.definitions.cellTypes.map.delete('esm');
-        runtime.definitions.cellTypes.map.delete('js');
-        runtime.definitions.cellTypes.map.delete('javascript');
-        runtime.definitions.cellTypes.map.delete('css');
-        runtime.definitions.cellTypes.map.delete('html');
-        runtime.definitions.cellTypes.map.delete('python');
-        runtime.definitions.cellTypes.map.delete('python3');
-        runtime.definitions.cellTypes.map.delete('ipython3');
-        runtime.definitions.cellTypes.map.delete('py');
-        runtime.definitions.cellTypes.map.delete('pypy');
-        runtime.definitions.cellTypes.map.delete('latex');
-
-        runtime.definitions.cellTypes.register("shell", SHELL_CELL_TYPE_DEFINITION);
-        console.log(runtime.definitions.cellTypes);
-}
-
-(function() {
-        'use strict';
-
+function setupApp() {
         if('serviceWorker' in navigator)
                 navigator.serviceWorker.register('./worker.js');
 
         navigator.storage.persist();             
                 
         settingsLoad().then(() => {
-                pAPI = new ProbeAPI(updateHosts, addHistory);
-                pAPI.connect();
+                ProbeAPI.connect();
+                $('#menu a').on('click', function() {
+                        view($(this).attr('data-view'));
+                });
                 view('main');
                 registerStarboardShellCellType();
 
@@ -403,4 +326,6 @@ function registerStarboardShellCellType() {
                 console.error(info);
                 setInfo(info);
         });
-})();
+}
+
+export { setupApp, updateHosts, addHistory, setInfo, view };

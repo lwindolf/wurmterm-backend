@@ -1,6 +1,8 @@
 // vim: set ts=4 sw=4:
 /*jshint esversion: 8 */
 
+import { ProbeAPI } from "./probeapi.js";
+
 /* -------------------------------------------------------------------------
    Persistent settings using IndexedDB
    ------------------------------------------------------------------------- */
@@ -75,7 +77,6 @@ function settingsLoad() {
                 .then(() => settingsGet('refreshInterval', '5'))
                 .then(() => settingsGet('probeBlacklist', []))
                 .then(() => {
-                        settingsDialog();       // fill values in GUI
                         resolve();
                 }).catch(function(e) {
                         reject(`Error loading settings: ${e}`);
@@ -90,7 +91,7 @@ function settingsInputChanged(ev) {
         settingSet(id, $(i).val());
 
         if(id === 'backendEndpoint')
-                pAPI.connect();
+                ProbeAPI.connect();
 }
 
 function settingsProbeToggle(ev) {
@@ -112,10 +113,10 @@ function settingsDialog() {
                 }
         });
 
-        if(pAPI && pAPI.probes) {
+        if(ProbeAPI.probes) {
                 $('#probesDisabled').empty();
                 $('#probesEnabled').empty();
-                $.each(pAPI.probes, function(name, p) {
+                $.each(ProbeAPI.probes, function(name, p) {
                         document.getElementById(
                                 (settings.probeBlacklist.includes(name)?'probesDisabled':'probesEnabled')
                         ).innerHTML += `<div class='probe' data-name='${name}'>${name}</div>`;
@@ -128,3 +129,5 @@ function settingsDialog() {
         });
         $('#settings .probe').click(settingsProbeToggle);
 }
+
+export { settingsGet, settingsSet, settingsLoad, settingsDialog, settings };
