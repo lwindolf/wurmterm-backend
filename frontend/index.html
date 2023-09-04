@@ -53,12 +53,13 @@
 			<option value='localhost'>
 		</datalist>
 
-		Notebook <input type='text' id='notebook-name' list='notebook-names' placeholder='Name of a notebook' value='default'/>
-		<datalist id='notebook-names'>
+		Notebook
+		<select id='notebook-name'>
 			<!-- FIXME load list automatically -->
-			<option value='default'>
-			<option value='systemd'>
-		</datalist>
+			<option default>default</option>
+			<option>systemd</option>
+			<option>arp</option>
+		</select>
 	</div>
 
 	<div class='main' id='settings'>
@@ -101,12 +102,6 @@
 		(async function() {
 			'use strict';
 
-			let response = await fetch("/notebooks/default.md");
-			window.initialNotebookContent = await response.text();			
-
-			/* Async module load to ensure above webpack workaround is done 
-			   and we have loaded the initial notebook markdown */
-			await import('./node_modules/starboard-notebook/dist/starboard-notebook.js');
 			setupApp();
 		})();
 	</script>

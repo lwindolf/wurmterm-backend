@@ -91,4 +91,32 @@ function registerStarboardShellCellType() {
         runtime.definitions.cellTypes.register("shell", SHELL_CELL_TYPE_DEFINITION);
 }
 
-export { registerStarboardShellCellType };
+function reloadNotebook() {
+        var n = $('#notebook-name').find("option:selected").val();
+        var h = $('#notebook-host').val();
+
+        window.location.href = `/?view=notebook&notebook=${n}&host=${h}`;
+}
+
+async function setupNotebook(host, name) {
+        if (!host)
+                host = 'localhost';
+        if (!name)
+                name = 'default';
+        
+        $('#notebook-name').val(name);
+        $('#notebook-host').val(host);
+
+        let response = await fetch(`/notebooks/${name}.md`);
+        window.initialNotebookContent = await response.text();			
+
+        /* Async module load to ensure we have loaded the initial notebook markdown above */
+        import('../node_modules/starboard-notebook/dist/starboard-notebook.js').then(() => {
+                registerStarboardShellCellType();
+
+                $('#notebook-name').on('change', reloadNotebook);
+                $('#notebook-host').on('change', reloadNotebook);
+        });
+}
+
+export { setupNotebook };

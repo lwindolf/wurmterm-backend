@@ -1,15 +1,15 @@
 // vim: set ts=4 sw=4:
 /* jshint esversion: 6 */
 
-import { registerStarboardShellCellType } from './notebook.js';
+import { setupNotebook } from './notebook.js';
 import { settingsDialog, settingsLoad } from './settings.js';
 import { ProbeAPI } from './probeapi.js';
 
 import { perfRenderer } from './renderer/perf-flamegraph.js';
 import { netmapRenderer } from './renderer/netmap.js';
 
-var hosts = {};
-var renderers = {
+const params = new URLSearchParams(window.location.search);
+const renderers = {
         'netmap': netmapRenderer,
         'perfFlameGraph': perfRenderer
 };
@@ -316,8 +316,12 @@ function setupApp() {
                 $('#menu a').on('click', function() {
                         view($(this).attr('data-view'));
                 });
-                view('main');
-                registerStarboardShellCellType();
+
+                view(params.get('view')?params.get('view'):'main');
+                setupNotebook(
+                        params.get('host'),
+                        params.get('notebook')
+                );
 
                 $('#renderer').on('change', function() {
                         visualizeHost($('#visualizedHost').text(), $(this).val());
