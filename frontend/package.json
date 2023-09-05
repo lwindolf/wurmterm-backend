@@ -18,6 +18,6 @@
     },
     "scripts": {
         "test": "jshint worker.js js/*.js js/renderer/*.js",
-        "start": "python3 -m http.server"
+        "start": "npx serve -S"
     }
 }

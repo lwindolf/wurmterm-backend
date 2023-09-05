@@ -3,7 +3,7 @@
 
 ### Kernel Settings
 
-Check wether ARP ignoring is active. If you want ARP resolving the `arp_ignore` value should be 1
+Check whether ARP resolving is enabled: the `arp_ignore` setting should be 0
 # %% [shell]
 sysctl net.ipv4.conf.all.arp_ignore
 # %% [markdown]
@@ -22,20 +22,10 @@ While you can query settings per network interface via `sysctl` too it’s easie
 # %% [shell]
 ip ntable show 
 # %% [markdown]
-### Clear Cache
-
-To clear the complete cache run
-# %% [shell]
-ip -s -s neigh flush all
-# %% [markdown]
-You can also run `arp -d `. To delete individual items run:
-# %% [shell]
-arp -d <ip>
-# %% [markdown]
 
 ### Show Cache
 
-Print ARP cache with `ip neigh`
+Print with
 # %% [shell]
 ip neigh
 # %% [markdown]
@@ -45,6 +35,17 @@ Note how valid entries are marked as `REACHABLE` outdated entries are marked as 
 Or if ARP tools are installed print ARP cache with `arp -a` or `arp -n` for table format.
 # %% [shell]
 arp -a
+# %% [markdown]
+
+### Clear Cache
+
+To clear the complete cache run
+# %% [shell]
+ip -s -s neigh flush all
+# %% [markdown]
+You can also run `arp -d `. To delete individual items run:
+# %% [shell]
+arp -d <ip>
 # %% [markdown]
 ### Further Reading
 

@@ -1,5 +1,5 @@
 // vim: set ts=4 sw=4:
-/* jshint esversion: 8 */
+/* jshint esversion: 11 */
 
 import { ProbeAPI } from './probeapi.js';
 
@@ -111,12 +111,11 @@ async function setupNotebook(host, name) {
         window.initialNotebookContent = await response.text();			
 
         /* Async module load to ensure we have loaded the initial notebook markdown above */
-        import('../node_modules/starboard-notebook/dist/starboard-notebook.js').then(() => {
-                registerStarboardShellCellType();
+        await import('../node_modules/starboard-notebook/dist/starboard-notebook.js');
+        registerStarboardShellCellType();
 
-                $('#notebook-name').on('change', reloadNotebook);
-                $('#notebook-host').on('change', reloadNotebook);
-        });
+        $('#notebook-name').on('change', reloadNotebook);
+        $('#notebook-host').on('change', reloadNotebook);
 }
 
 export { setupNotebook };
