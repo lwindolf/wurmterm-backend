@@ -76,11 +76,9 @@ function registerStarboardShellCellType() {
                 }  
         }
 
-        runtime.definitions.cellTypes.map.delete('esm');
         runtime.definitions.cellTypes.map.delete('js');
         runtime.definitions.cellTypes.map.delete('javascript');
         runtime.definitions.cellTypes.map.delete('css');
-        runtime.definitions.cellTypes.map.delete('html');
         runtime.definitions.cellTypes.map.delete('python');
         runtime.definitions.cellTypes.map.delete('python3');
         runtime.definitions.cellTypes.map.delete('ipython3');
@@ -107,7 +105,7 @@ async function setupNotebook(host, name) {
         $('#notebook-name').val(name);
         $('#notebook-host').val(host);
 
-        let response = await fetch(`/notebooks/${name}.md`);
+        let response = await fetch(`/notebooks/${name}.nb`);
         window.initialNotebookContent = await response.text();			
 
         /* Async module load to ensure we have loaded the initial notebook markdown above */
@@ -117,5 +115,16 @@ async function setupNotebook(host, name) {
         $('#notebook-name').on('change', reloadNotebook);
         $('#notebook-host').on('change', reloadNotebook);
 }
+
+// Helper function to allow JS notebook cells to get output of other cells
+window.getCellOutput = (cellNr) => {
+        if(undefined === runtime.content.cells[cellNr]) {
+                console.error(`No cell with index ${cellNr} found!`);
+                return "";
+        }
+
+        let id = runtime.content.cells[cellNr].id;
+        return $(`starboard-cell#${id} .starboard-console-output-inner`).get(0).innerText;
+};
 
 export { setupNotebook };

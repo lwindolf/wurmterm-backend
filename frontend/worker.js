@@ -26,9 +26,10 @@ var filesToCache = [
   '/js/renderer/netmap.js',
   '/js/renderer/perf-flamegraph.js',
 
-  '/notebooks/default.md',
-  '/notebooks/arp.md',
-  '/notebooks/systemd.md',
+  '/notebooks/default.nb',
+  '/notebooks/df.nb',
+  '/notebooks/arp.nb',
+  '/notebooks/systemd.nb',
   'default.json'
 ];
 
