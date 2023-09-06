@@ -283,7 +283,7 @@
         }
    },
    "k8s Pods": {
-        "command"   : "kubectl get pods -A 2>/dev/null | egrep -i 'Err|Failed|ImagePull|Pending|Creating'",
+        "command"   : "(kubectl get pods -A 2>/dev/null || kubectl get pods 2>/dev/null) | egrep -i 'Err|Failed|ImagePull|Pending|Creating'",
         "local"     : "True",
         "localOnly" : "True",
         "initial": "True",
@@ -298,7 +298,7 @@
         }
    },
    "k8s PVCs": {
-       "command": "kubectl get pvc -A 2>/dev/null | egrep -i 'Failed|Pending'",
+       "command": "(kubectl get pvc -A 2>/dev/null || kubectl get pvc 2>/dev/null) | egrep -i 'Failed|Pending'",
        "local"     : "True",
        "localOnly" : "True",
        "initial": "True",
