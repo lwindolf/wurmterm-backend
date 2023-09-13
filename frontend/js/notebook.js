@@ -3,7 +3,7 @@
 
 import { ProbeAPI } from './probeapi.js';
 
-// Starboard-Notebook has no native shell type, so we register one
+// Starboard-Notebook has no native shell cell type, so we register one
 // see CoffeeScript example: https://starboard.gg/gz/coffeescript-custom-cell-type-n1VJRGC
 function registerStarboardShellCellType() {
         const StarboardTextEditor = runtime.exports.elements.StarboardTextEditor;
