@@ -15,6 +15,9 @@
         "stateful-process-command-proxy": "~1.0.1",
         "websocket": "^1.0.34"
     },
+    "devDependencies": {
+        "jshint": "^2.13.6"
+    },
     "scripts": {
         "test": "jshint *.js"
     },
