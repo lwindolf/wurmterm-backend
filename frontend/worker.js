@@ -27,7 +27,7 @@ var filesToCache = [
   '/js/renderer/perf-flamegraph.js',
 
   '/notebooks/default.nb',
-  '/notebooks/df.nb',
+  '/notebooks/du.nb',
   '/notebooks/arp.nb',
   '/notebooks/systemd.nb',
   'default.json'

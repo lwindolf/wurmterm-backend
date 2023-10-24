@@ -3,12 +3,12 @@
 # %% [markdown]
 ### Directory Usage Overview
 
-The following command lists directory sorted by size. You might want to modify the `-maxdepth 2` parameter for different details. **Note that this command can run for quite some time!**
+The following command lists directory sorted by size. You might want to modify the `-maxdepth 3` parameter for more details. **Note that this command can run for quite some time!**
 # %%--- [shell]
 # properties:
 #   bottom_hidden: true
 # ---%%
-cd /usr/share; (find . -maxdepth 3 -type d ! -name "." -print0 | xargs -0 -n1 du -sm | sort -nr ) 2>/dev/null
+cd /usr/lib; (find . -maxdepth 3 -type d -print0 | xargs -0 -n1 du -sm | sort -nr ) 2>/dev/null
 # %%--- [html]
 # properties:
 #   run_on_load: true
@@ -283,49 +283,41 @@ function uid(prefix) {
 }
 
 function getData(nr) {
-  // input data will be lines of "<path> <size in MB>"
+  // input data will be lines of "<size in MB> <path>"
   let data = {name: ".", children: []};
   let pathByName = {};	// lookup hash for insertion
-  getCellOutput(nr).split(/\n/).forEach((line) => {
-    function createParents(dir) {   
-      let d, name;
-      
-      if(pathByName[dir])
-          return pathByName[dir];
-      
-      if(-1 == dir.indexOf('/')) {
+
+  function getOrCreateNode(dir) {
+    let d, name;
+
+    if('.' === dir)
+      	return data;
+    if(pathByName[dir])
+        return pathByName[dir];
+
+    if(-1 == dir.indexOf('/')) {
         d = data;
         name = dir;
-      } else {
+    } else {
         let m, parentDir;
         [m, parentDir, name] = dir.match(/(.+)\/([^\/]+)/);
-        d = createParents(parentDir);
-      }
-      
-      return pathByName[dir] = d.children[d.children.push({name: name, children: []}) - 1];
+        d = getOrCreateNode(parentDir);
     }
-
-    try {
-      let path = line.split(/\s+/, 2)[1];
-      if("" !== path) {
-      	let d, name, m = path.match(/\.\/(.+)\/([^\/]+)/);
-        if(m) {
-            d = createParents(m[1]);
-            name = m[2];
-        } else {
-          	d = data;
-        	name = path.splice(2, path.length);   // FIXME: broken
-      	}
-        
-        d.children.push({ name: name, value: line.split(/\s+/, 2)[0]});
+    return pathByName[dir] = d.children[d.children.push({name: name, children: []}) - 1];   
+  }
+  
+  getCellOutput(nr).split(/\n/).forEach((line) => {
+    let path = line.split(/\s+/, 2)[1];
+    if(path && "" !== path) {
+      if(path.match(/\.\/(.+)\/([^\/]+)/)) {
+        let node = getOrCreateNode(path);
+        node.value = line.split(/\s+/, 2)[0];
       }
-    } catch(e) {
-      console.error(`Invalid line: ${line} (${e})`);
-    };
+    }
   });
-
   return data;
 }
+
 
 window.createRadialGraph = createRadialGraph;
 window.createTreeMap = createTreeMap;
