@@ -1,6 +1,6 @@
 # WurmTerm 🐛
 
-Linux Terminal companion app discovering services and issues on your servers.
+Linux Terminal companion app discovering services and issues on your servers and kubernetes namespaces.
 
 ![Screenshot WurmTerm](https://user-images.githubusercontent.com/3315368/118046621-dde32e00-b379-11eb-8400-7942eb401e86.png)
 
