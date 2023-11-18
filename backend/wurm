@@ -1,8 +1,36 @@
 #!/bin/bash
 
 # Start nodejs server if needed, always start in background
-if ! pgrep -f WurmTermBacken >/dev/null; then
-   (nohup node server.js >/dev/null 2>&1 &)
-else
-   echo "Already running."
-fi
+start() {
+    if ! pgrep -f WurmTermBacken >/dev/null; then
+        # Locate source (either in <dirname>/../lib/node_modules or in same dir)
+        if [ "$(dirname $0)" = "/usr/local/bin" ]; then
+            cd /usr/local/lib/node_modules/wurmterm-backend
+        else
+            cd "$(dirname $0)"
+        fi
+    
+        (nohup node server.js >/dev/null 2>&1 &)
+        echo "WurmTerm backend started."
+    else
+        echo "Already running."
+    fi
+}
+
+stop() {
+    if pgrep -f WurmTermBacken >/dev/null; then
+        echo "Stopping..."
+        pkill -fe WurmTermBacken
+    else
+        echo "Not running."
+    fi
+}
+
+case "${1-start}" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+esac
