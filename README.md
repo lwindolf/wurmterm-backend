@@ -20,6 +20,10 @@ a `netstat`/`ss` listing.
 
 ## Installation
 
+Backend
+
+    npm i wurmterm-backend
+
 From source
 
     cd backend && npm install
