@@ -1,0 +1,95 @@
+#!/bin/bash
+
+set -euo pipefail
+
+CONFIG=~/.config/wurmterm/config.json
+SERVER_PORT_DEFAULT="8181"
+
+configure() {
+    echo "Configuring WurmTerm backend..."
+
+    # Create config dir if missing
+    if [ ! -d $(dirname $CONFIG) ]; then
+        mkdir -p $(dirname $CONFIG)
+    fi 
+
+    while read -p "Server port [$SERVER_PORT_DEFAULT]: " SERVER_PORT; do
+        SERVER_PORT="${SERVER_PORT:=$SERVER_PORT_DEFAULT}"
+        if [[ $SERVER_PORT =~ ^[0-9]+$ ]]; then
+            break
+        else
+            echo "ERROR: Invalid port. Must be a port number!"
+        fi
+    done
+
+    while read -s -p "Connect password: " password; do
+        echo
+        if [[ $password =~ \" ]]; then
+            echo "ERROR: Invalid password. Must not contain '\"' !"
+        else
+            break
+        fi
+    done
+    
+    # Poor man JSON editing with poor man JWT secret
+    (cat <<EOT
+        {
+            "server": {
+                "host": "localhost",
+                "port": $SERVER_PORT
+            },
+            "client": {
+                "auth": "$(echo -n "$password" | base64)"
+            }
+        }
+EOT
+) >"$CONFIG"
+    echo "Configuration written to '${CONFIG}'."
+}
+
+# Start nodejs server if needed, always start in background
+start() {
+    if ! pgrep -f WurmTermBacken >/dev/null; then
+        # Locate source (either in <dirname>/../lib/node_modules or in same dir)
+        if [ "$(dirname $0)" = "/usr/local/bin" ]; then
+            PREFIX=/usr/local/lib/node_modules/wurmterm-backend
+
+        else
+            PREFIX="$(dirname $0)"
+        fi
+        cd "$PREFIX"
+
+        # Check for client auth configuration
+        if [ ! -f "$CONFIG" ]; then
+            configure
+        fi
+    
+        (nohup node server.js >/dev/null 2>&1 &)
+        echo "WurmTerm backend started."
+    else
+        echo "Already running."
+    fi
+}
+
+stop() {
+    if pgrep -f WurmTermBacken >/dev/null; then
+        echo "Stopping..."
+        pkill -fe WurmTermBacken
+    else
+        echo "Not running."
+    fi
+}
+
+case "${1-start}" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    configure)
+	configure
+        stop
+        start
+	;;
+esac

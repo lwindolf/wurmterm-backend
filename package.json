@@ -3,18 +3,17 @@
     "main": "server.js",
     "description": "WurmTerm, a friendly wurm walking along your SSH sessions. Backend service.",
     "license": "GPL-3.0",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "repository": {
         "type": "git",
         "url": "https://github.com/lwindolf/wurmterm.git"
     },
     "dependencies": {
-        "config": "^3.3.9",
         "cors": "^2.8.5",
         "express": ">=4.5.0",
         "promise": "~8.0.0",
         "stateful-process-command-proxy": "~1.0.1",
-        "websocket": "^1.0.34"
+        "ws": "^8.14.2"
     },
     "devDependencies": {
         "jshint": "^2.13.6"
