@@ -10,10 +10,10 @@ only the backend part.
 
 ## Backend Usage
 
-    npx wurm start
-    npx wurm stop
+    wurm start
+    wurm stop
 
-    npx wurm configure    # to change settings / password
+    wurm configure    # to change settings / password
 
 ## Assumptions
 
