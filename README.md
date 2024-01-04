@@ -6,7 +6,7 @@ only the backend part.
 
 ## Installation
 
-    npm i wurmterm-backend
+    sudo npm install -g wurmterm-backend
 
 ## Backend Usage
 
