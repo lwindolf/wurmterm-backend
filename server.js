@@ -28,7 +28,7 @@ const http = require('http'),
 
 const { exec } = require("child_process");
 
-var config = require(os.homedir() + '/.config/wurmterm/config.json')
+var config = require(os.homedir() + '/.config/wurmterm/config.json');
 var probes = require('./probes/default.json');
 var proxies = {};
 var filters = {};
@@ -72,7 +72,7 @@ function get_hosts(socket) {
 			if (error)
 				throw (error);
 
-			var hosts = stdout.split(/\n/)
+			let hosts = stdout.split(/\n/)
 				.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
 				.map(s => s.replace(/^[0-9]+ +ssh +/, ''))
 				.filter(s => s.length > 1);
@@ -89,9 +89,9 @@ function get_hosts(socket) {
 
 // Return all probes including initial flag so a frontend knows where to start
 function get_probes(socket) {
-	var output = {};
+	let output = {};
 	Object.keys(probes).forEach(function (probe) {
-		var p = probes[probe];
+		let p = probes[probe];
 		output[probe] = {
 			name: p.name,
 			initial: p.initial,
@@ -109,7 +109,7 @@ function get_probes(socket) {
 
 function runFilter(socket, msg) {
 	// Use only a single file here as we allow only one filter run at a time below
-	var tmpfile = '/tmp/wurmterm_localhost_filter';
+	let tmpfile = '/tmp/wurmterm_localhost_filter';
 	fs.writeFile(tmpfile, msg.stdout, function (err) {
 		if (err) {
 			console.log(err);
@@ -188,7 +188,7 @@ function probeWS(socket, host, probe) {
 		}
 
 		getProxy(host).executeCommands([probes[probe].command]).then(function (res) {
-			var msg = {
+			let msg = {
 				cmd: 'probe',
 				host: host,
 				probe: probe,
@@ -201,7 +201,7 @@ function probeWS(socket, host, probe) {
 			if ('render' in probes[probe]) msg.render = probes[probe].render;
 			if ('type' in probes[probe]) msg.type = probes[probe].type;
 			// Suggest followup probes
-			for (var p in probes) {
+			for (let p in probes) {
 				if (probes[p]['if'] === probe && -1 !== res[0].stdout.indexOf(probes[p].matches))
 					msg.next.push(p);
 			}
@@ -223,7 +223,7 @@ function probeWS(socket, host, probe) {
 function run(socket, host, id, cmd) {
 	try {
 		getProxy(host).executeCommands([cmd]).then(function (res) {
-			var msg = {
+			let msg = {
 				cmd: 'run',
 				shell: cmd,
 				host: host,
@@ -273,7 +273,7 @@ wsServer.on('connection', (ws, req, client) => {
 
 	ws.on('message', function (message) {
 		// Auth message handling
-		var m = ('' + message).match(/^auth (\w+)$/);
+		let m = ('' + message).match(/^auth (\w+)$/);
 		if (m && m[1] && (m[1] === credential)) {
 			clientAuth[ws] = true;
 			ws.send(JSON.stringify({
@@ -293,10 +293,10 @@ wsServer.on('connection', (ws, req, client) => {
 		}
 
 		// General syntax is "<command>[ <parameters>]"
-		var m = ('' + message).match(/^(\w+)( (.+))?$/m);
+		m = ('' + message).match(/^(\w+)( (.+))?$/m);
 		if (m) {
-			var cmd = m[1];
-			var params = m[3];
+			let cmd = m[1];
+			let params = m[3];
 
 			if (cmd === 'hosts')
 				return get_hosts(ws);
@@ -318,7 +318,7 @@ wsServer.on('connection', (ws, req, client) => {
 			}
 		}
 		ws.send(JSON.stringify({
-			cmd: m,
+			cmd: m[1],
 			error: 'Unsupported command'
 		}));
 	});
