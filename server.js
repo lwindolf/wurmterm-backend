@@ -73,8 +73,8 @@ function get_hosts(socket) {
 				throw (error);
 
 			let hosts = stdout.split(/\n/)
-				.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
 				.map(s => s.replace(/^[0-9]+ +ssh +/, ''))
+				.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
 				.filter(s => s.length > 1);
 			hosts.push('localhost');
 			socket.send(JSON.stringify({
