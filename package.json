@@ -3,7 +3,7 @@
     "main": "server.js",
     "description": "WurmTerm, a friendly wurm walking along your SSH sessions. Backend service.",
     "license": "GPL-3.0",
-    "version": "0.9.3",
+    "version": "0.9.4",
     "repository": {
         "type": "git",
         "url": "https://github.com/lwindolf/wurmterm-backend.git"
