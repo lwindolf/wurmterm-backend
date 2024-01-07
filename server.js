@@ -94,6 +94,7 @@ function get_probes(socket) {
 		let p = probes[probe];
 		output[probe] = {
 			name: p.name,
+			command: p.command,
 			initial: p.initial,
 			refresh: p.refresh,
 			local: p.local,

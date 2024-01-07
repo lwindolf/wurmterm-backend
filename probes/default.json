@@ -27,13 +27,13 @@
    },
    "who": {
 	"name"   : "Active Users",
-	"command": "who",
+	"command": "who -q",
 	"initial": "True",
         "refresh": 30,
         "render" : {
              "type" : "lines",
              "severity": {
-                "warning" : ".+\n.+"
+                "warning" : "^# users=[^1]"
 	     }
         }
    },
@@ -91,7 +91,7 @@
         "render" : {
             "type"    : "lines",
             "severity": {
-                "warning" : "warn|masked|maintenance",
+                "warning" : "(warn|masked|maintenance)",
                 "critical": "failed"
             }
          }
@@ -103,7 +103,7 @@
         "render" : {
             "type"    : "lines",
             "severity": {
-                "critical" : "error|fatal|critical",
+                "critical" : "(error|fatal|critical)",
                 "warning"  : "\\w+"
             }
          }
@@ -351,7 +351,7 @@
            "type" : "table",
            "split": "\\s+",
            "severity": {
-               "warning" : "pending|shutting-down"
+               "warning" : "(pending|shutting-down)"
            }
        }
    },
