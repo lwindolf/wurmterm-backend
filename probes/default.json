@@ -85,7 +85,7 @@
    },
    "systemd": {
 	"name"   : "Systemd Problems",
-        "command": "systemctl list-units | /bin/egrep '( loaded (maintenance|failed)| masked )'",
+        "command": "systemctl --state masked --state failed --state maintenance",
         "refresh": 30,
         "initial": "True",
         "render" : {
