@@ -400,7 +400,7 @@
        }
    },
    "dpkg": {
-       "command": "sudo -n dpkg -C | awk '/^ / {print $1}' && sudo -n dpkg -l | awk '/^iF/ {print $2}'",
+       "command": "sudo -n dpkg -C | awk '/^ / {print $1}' && dpkg -l | awk '/^iF/ {print $2}'",
        "refresh": 76800,
        "local"  : "True",
        "initial": "True",
