@@ -97,7 +97,7 @@
          }
    },
    "System Log": {
-        "command": "/bin/journalctl -k -p 0..3 -S '12 hours ago' -n 10 | /bin/egrep -v '(Logs begin at|No entries)'",
+        "command": "/bin/journalctl -k -r -p 0..4 -S '12 hours ago' -n 50 | /bin/egrep -v '(Logs begin at|No entries)'",
         "initial": "True",
         "refresh": 60,
         "render" : {
