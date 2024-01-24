@@ -67,5 +67,5 @@ manager cache. For Debian-based systems:
 
 To get an overview on disk usage per directory use these visualisations:
 
-- [du Radial Map](https://lzone.de/visual-ops/du+Radial+Map)
-- [du Tree Map](https://lzone.de/visual-ops/du+Tree+Map)
+- [du Radial Map](https://lzone.de/#/Visual+Ops/du+Radial+Map)
+- [du Tree Map](https://lzone.de/#/Visual+Ops/du+Tree+Map)
