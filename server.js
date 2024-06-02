@@ -1,7 +1,7 @@
 // vim: set ts=4 sw=4:
 /*jshint esversion: 6 */
 /*
-  Copyright (C) 2015-2023  Lars Windolf <lars.windolf@gmx.de>
+  Copyright (C) 2015-2024  Lars Windolf <lars.windolf@gmx.de>
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -42,6 +42,24 @@ process.on('uncaughtException', function (err) {
 // Hostname matching based on https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
 const validIpAddressRegex = /^([a-zA-Z0-9]+@){0,1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
 const validHostnameRegex = /^([a-zA-Z0-9]+@){0,1}(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+
+// get history of kubectl contexts
+function get_kubectxt(socket) {
+	try {
+		const cmd = 'kubectl config view -o jsonpath="{.contexts}"';
+		exec(cmd, (error, stdout, stderr) => {
+			if (error)
+				throw (error);
+
+			socket.send(JSON.stringify({
+				cmd: 'kubectxt',
+				result: stdout
+			}));
+		});
+	} catch (e) {
+		return { cmd: 'kubectxt', error: e };
+	}
+}
 
 // get history of SSH commands
 function get_history(socket) {
@@ -305,6 +323,8 @@ wsServer.on('connection', (ws, req, client) => {
 				return get_probes(ws);
 			if (cmd === 'history')
 				return get_history(ws);
+			if (cmd === 'kubectxt')
+				return get_kubectxt(ws);
 
 			if (cmd === 'run') {
 				// we expect message in format "run <host>:::<id>:::<cmd>"
