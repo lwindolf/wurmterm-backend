@@ -27,13 +27,13 @@
    },
    "who": {
 	"name"   : "Active Users",
-	"command": "who -q",
+	"command": "who | cut -d' ' -f 1 | sort -u | xargs",
 	"initial": "True",
         "refresh": 30,
         "render" : {
              "type" : "lines",
              "severity": {
-                "warning" : "^# users=[^1]"
+                "warning" : " "
 	     }
         }
    },
@@ -59,7 +59,7 @@
         "command": "varnishstat -1",
         "if"     : "netstat",
         "matches": "varnishd",
-	    "type"   : "service",
+	"type"   : "service",
         "render" : {
              "type" : "table",
              "split": "\\s+"
@@ -69,7 +69,7 @@
         "command": "printf 'stats\nquit\n' | nc localhost 11211 | /bin/egrep 'STAT (version|threads|bytes|curr_connections)'",
         "if"     : "netstat",
         "matches": "memcached",
-	    "type"   : "service",
+	"type"   : "service",
         "render" : {
              "type" : "table",
              "split": "\\s+"
