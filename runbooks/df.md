@@ -4,7 +4,10 @@ This runbook is about analyzing disk usage issues.
 
 Determine mount point that is full from
 
-    df -h           
+    df -h
+
+In case you are out of inodes run with `-i` instead
+
     df -i     # In case you are out of inodes
 
 Change directory to the mount point
