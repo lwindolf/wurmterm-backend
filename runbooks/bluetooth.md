@@ -1,5 +1,9 @@
 This runbook is about bluetooth connection debugging on laptops.
 
+## Check for active kernel driver
+
+    lsmod | grep bluetooth
+
 ## Check for running daemon
 
     systemctl status bluetooth.service
@@ -25,3 +29,17 @@ To check for a missing firmware error:
 
 If this is the case download the firmware from your Linux distro / the vendor and put it in
 `/lib/firmware`.
+
+## Try discovering / connecting devices
+
+Check if a controller shows up
+
+    bluetoothctl list
+
+Check if nearby devices are seen
+
+    bluetoothctl devices
+
+Try to connect a device
+
+    bluetoothctl connect <device>
