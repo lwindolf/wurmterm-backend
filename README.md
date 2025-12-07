@@ -6,6 +6,8 @@ only the backend part.
 
 [![CI Build](https://github.com/lwindolf/wurmterm-backend/actions/workflows/test.yml/badge.svg)](https://github.com/lwindolf/wurmterm-backend/actions/workflows/test.yml)
 
+[![NPM](https://nodei.co/npm/wurmterm-backend.svg?data=d,s)](https://nodei.co/npm/wurmterm-backend/)
+
 ## Installation
 
     sudo npm install -g wurmterm-backend
