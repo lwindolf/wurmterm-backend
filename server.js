@@ -47,7 +47,7 @@ function get_status(socket) {
 	socket.send(JSON.stringify({
 		cmd: 'status',
 		result: Object.entries(proxies).map(([k,v]) => {
-			return { name: k, status: v.getStatus() }
+			return { name: k, status: v.getStatus() };
 		})
 	}));
 }
