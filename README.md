@@ -1,8 +1,8 @@
 # WurmTerm Backend 🐛
 
-WurmTerm is an addon for the progressive web app lzone.de. It allows observing
-connected systems as well as exectuting runbooks against those. This repo contains
-only the backend part.
+WurmTerm backend is the backend for the [wurmterm.lzone.de](https://wurmterm.lzone.de) web app. 
+The app allows observing connected systems as well as executing runbooks against those. 
+This repo contains only the backend part. For using WurmTerm see [github.com/lwindolf/wurmterm](https://github.com/lwindolf/wurmterm).
 
 [![CI Build](https://github.com/lwindolf/wurmterm-backend/actions/workflows/test.yml/badge.svg)](https://github.com/lwindolf/wurmterm-backend/actions/workflows/test.yml)
 
