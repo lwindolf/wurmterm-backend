@@ -3,6 +3,7 @@
 set -euo pipefail
 
 CONFIG=~/.config/wurmterm/config.json
+PIDFILE=~/.cache/wurmterm/backend.pid
 SERVER_PORT_DEFAULT="8181"
 
 configure() {
@@ -63,21 +64,37 @@ start() {
         if [ ! -f "$CONFIG" ]; then
             configure
         fi
-    
-        (nohup node server.js >/dev/null 2>&1 &)
-        echo "WurmTerm backend started."
+
+        if [ ! -d $(dirname $PIDFILE) ]; then
+            mkdir -p $(dirname $PIDFILE)
+        fi
+
+        (
+            nohup node server.js >/dev/null 2>&1 &
+            echo $! >$PIDFILE
+        )
+
+        echo "WurmTerm backend started (pid $(cat "$PIDFILE"))"
     else
         echo "Already running."
     fi
 }
 
 stop() {
-    if pgrep -f WurmTermBacken >/dev/null; then
-        echo "Stopping..."
-        pkill -fe WurmTermBacken
+    pid=$(cat "$PIDFILE" 2>/dev/null || echo "")
+    if [ -z "$pid" ]; then
+        echo "Not running."
+        return
+    fi
+
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "Stopping (pid $pid) ..."
+        kill "$pid"
     else
         echo "Not running."
     fi
+
+    rm -f "$PIDFILE"
 }
 
 case "${1-start}" in
