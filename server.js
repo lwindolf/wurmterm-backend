@@ -126,7 +126,8 @@ function get_probes(socket) {
 			refresh: p.refresh,
 			local: p.local,
 			localOnly: p.localOnly,
-			localFilter: p.localFilter
+			localFilter: p.localFilter,
+			runbook: p.runbook
 		};
 	});
 	socket.send(JSON.stringify({
