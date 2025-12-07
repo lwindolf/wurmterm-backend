@@ -335,7 +335,7 @@ wsServer.on('connection', (ws, req, client) => {
 	// Send a version so frontend can check for compatibility
 	ws.send(JSON.stringify({
 		cmd: 'version',
-		value: '0.9.11'
+		value: '0.9.12'
 	}));
 
 	ws.on('message', function (message) {
