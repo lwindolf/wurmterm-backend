@@ -23,9 +23,9 @@ This repo contains only the backend part. For using WurmTerm see [github.com/lwi
 
 WurmTerm backend assumes 
 
-- that you use bash
+- that you have bash installed
 - that it can connect to all those hosts via SSH without credentials
-- that is allowed to discover connected kubernetes contexts
+- that it is allowed to discover connected kubernetes contexts
 - that you use `ssh <node|ip>` only and handle all private key switching in your SSH config
 - that it is always allowed to sudo (but won't complain if it does not succeed)
 

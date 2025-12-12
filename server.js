@@ -24,14 +24,14 @@ const http = require('http'),
 	fs = require('fs'),
 	app = express(),
 	StatefulProcessCommandProxy = require("stateful-process-command-proxy"),
-	WebSocket = require('ws');
+	WebSocket = require('ws'),
+	exec = require("child_process"),
+	promisify = require('util').promisify,
+	execPromise = promisify(exec.exec);
 
-const { exec } = require("child_process");
-
-var config = require(os.homedir() + '/.config/wurmterm/config.json');
-var probes = require('./probes/default.json');
+const config = require(os.homedir() + '/.config/wurmterm/config.json');
+const probes = require('./probes/default.json');
 var proxies = {};
-var filters = {};
 
 process.title = 'WurmTermBackend';
 process.on('uncaughtException', function (err) {
@@ -43,79 +43,65 @@ process.on('uncaughtException', function (err) {
 const validIpAddressRegex = /^([a-zA-Z0-9]+@){0,1}(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
 const validHostnameRegex = /^([a-zA-Z0-9]+@){0,1}(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
 
-function get_status(socket) {
-	socket.send(JSON.stringify({
-		cmd: 'status',
+function get_status() {
+	return {
 		result: Object.entries(proxies).map(([k,v]) => {
 			return { name: k, status: v.getStatus() };
 		})
-	}));
+	};
 }
 
-// get history of kubectl contexts
-function get_kubectxt(socket) {
-	try {
-		const cmd = 'kubectl config view -o jsonpath="{.contexts}"';
-		exec(cmd, (error, stdout, stderr) => {
-			if (error)
-				throw (error);
-
-			socket.send(JSON.stringify({
-				cmd: 'kubectxt',
-				result: JSON.parse(stdout)
-			}));
-		});
-	} catch (e) {
-		return { cmd: 'kubectxt', error: e };
-	}
+async function get_kubectxt() {
+	return {
+		result: {
+			contexts: await execPromise(`kubectl config view -o jsonpath='{.contexts}'`).then(({ stdout, stderr }) => {
+				if (stderr) {
+					console.error(stderr);
+					throw(`Error fetching kubectl contexts!`);
+				}
+				return JSON.parse(stdout);
+			}),
+			"current-context": await execPromise(`kubectl config current-context`).then(({ stdout, stderr }) => {
+				if (stderr) {
+					console.error(stderr);
+					throw(`Error fetching current kubectl context!`);
+				}
+				return stdout.trim();
+			})
+		}
+	};
 }
 
 // get history of SSH commands
-function get_history(socket) {
-	try {
-		const cmd = `cat ~/.bash_history | awk '{if (\$1 == \"ssh\" && \$2 ~ /^[a-z0-9]/) {print \$2}}' | tail -50 | sort -u`;
-		exec(cmd, (error, stdout, stderr) => {
-			if (error)
-				throw (error);
-
-			socket.send(JSON.stringify({
-				cmd: 'history',
-				result: stdout
-					.split(/\n/)
-					.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
-					.filter(s => s.length > 1)
-			}));
-		});
-	} catch (e) {
-		return { cmd: 'history', error: e };
-	}
+async function get_history() {
+	const cmd = `cat ~/.bash_history | awk '{if (\$1 == \"ssh\" && \$2 ~ /^[a-z0-9]/) {print \$2}}' | tail -50 | sort -u`;
+	return execPromise(cmd).then(({ stdout, stderr }) => {
+		return {
+			result: stdout
+				.split(/\n/)
+				.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
+				.filter(s => s.length > 1)
+		};
+	});
 }
 
 // get all hosts currently SSH connected
-function get_hosts(socket) {
-	try {
-		const cmd = 'pgrep -fla "^ssh " || true';
-		exec(cmd, (error, stdout, stderr) => {
-			if (error)
-				throw (error);
-
-			let hosts = stdout.split(/\n/)
-				.map(s => s.replace(/^[0-9]+ +ssh +/, ''))
-				.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
-				.filter(s => s.length > 1);
-			hosts.push('localhost');
-			socket.send(JSON.stringify({
-				cmd: 'hosts',
-				result: hosts
-			}));
-		});
-	} catch (e) {
-		return { cmd: 'hosts', error: e };
-	}
+async function get_hosts() {
+	const cmd = 'pgrep -fla "^ssh " || true';
+	return execPromise(cmd).then(({ stdout, stderr }) => {
+		let hosts = stdout.split(/\n/)
+			.map(s => s.replace(/^[0-9]+ +ssh +/, ''))
+			.filter(h => h.match(validHostnameRegex) || h.match(validIpAddressRegex))
+			.filter(s => s.length > 1);
+		hosts.push('localhost');
+		return {
+			result: hosts
+		};
+	});
 }
 
 // Return all probes including initial flag so a frontend knows where to start
-function get_probes(socket) {
+function get_probes() {
 	let output = {};
 	Object.keys(probes).forEach(function (probe) {
 		let p = probes[probe];
@@ -130,13 +116,13 @@ function get_probes(socket) {
 			runbook: p.runbook
 		};
 	});
-	socket.send(JSON.stringify({
+	return {
 		cmd: 'probes',
 		result: output
-	}));
+	};
 }
 
-function runFilter(socket, msg) {
+async function runFilter(msg) {
 	// Use only a single file here as we allow only one filter run at a time below
 	let tmpfile = '/tmp/wurmterm_localhost_filter';
 	fs.writeFile(tmpfile, msg.stdout, function (err) {
@@ -144,117 +130,79 @@ function runFilter(socket, msg) {
 			console.log(err);
 			msg.stdout = "";
 			msg.stderr = "Local filter execution failed, writing temporary file failed!";
-			socket.send(JSON.stringify(msg));
+			return msg;
 		}
 	});
 
-	if (undefined === proxies[':localhost_filter']) {
-		proxies[':localhost_filter'] = new StatefulProcessCommandProxy({
-			name: ':localhost_filter',
-			max: 1,
-			min: 1,
-			idleTimeoutMS: 60000,
-			logFunction: function (severity, origin, msg) {
-				//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
-			},
-			processCommand: "/bin/bash",
-			processArgs: [],
-			processRetainMaxCmdHistory: 0,
-			processInvalidateOnRegex: {
-				//'stderr':[{regex:'.*error.*',flags:'ig'}]
-			},
-			processCwd: './',
-			processUid: null,
-			processGid: null,
-			initCommands: ['LANG=C;echo'],	// to catch banners and pseudo-terminal warnings
-			validateFunction: function (processProxy) {
-				return processProxy.isValid();
-			},
-		});
-	}
-	proxies[':localhost_filter'].executeCommands([
+	const res = await getProxy(':localhost_filter', timeout = 60000).executeCommands([
 		`cat ${tmpfile} | ${probes[msg.probe].localFilter}`,
 		`rm ${tmpfile}`
-	]).then(function (res) {
-		msg.stdout = res[0].stdout;
-		msg.stderr = res[0].stderr;
-		socket.send(JSON.stringify(msg));
-	});
+	]);
+	msg.stdout = res[0].stdout;
+	msg.stderr = res[0].stderr;
+	return msg;
 }
 
-function getProxy(host) {
-	if (undefined === proxies[host]) {
-		proxies[host] = new StatefulProcessCommandProxy({
-			name: "proxy_" + host,
+function getProxy(name, processCommand = "/bin/bash", processArgs = []) {
+	if (undefined === proxies[name]) {
+		proxies[name] = new StatefulProcessCommandProxy({
+			name,
 			max: 1,
 			min: 1,
 			idleTimeoutMS: 15000,
-			logFunction: function (severity, origin, msg) {
-				//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
-			},
-			processCommand: 'scripts/generic.sh',
-			processArgs: [host],
+			processCommand,
+			processArgs,
 			processRetainMaxCmdHistory: 0,
 			processInvalidateOnRegex: {
 				'stderr': [{ regex: '.*error.*', flags: 'ig' }]
 			},
 			processCwd: './',
-			processUid: null,
-			processGid: null,
 			initCommands: ['LANG=C;echo'],	// to catch banners and pseudo-terminal warnings
 			validateFunction: function (processProxy) {
 				return processProxy.isValid();
 			},
 		});
 	}
-	return proxies[host];
+	return proxies[name];
 }
 
-// discover local network services via mDNS and SSDP
-function get_localnet(socket) {
-	if (undefined === proxies[':localnet_discover']) {
-		proxies[':localnet_discover'] = new StatefulProcessCommandProxy({
-			name: ':localnet_discover',
-			max: 1,
-			min: 1,
-			idleTimeoutMS: 60000,
-			logFunction: function (severity, origin, msg) {
-				//console.log(severity.toUpperCase() + " " +origin+" "+ msg);
-			},
-			processCommand: "/bin/bash",
-			processArgs: [],
-			processRetainMaxCmdHistory: 0,
-			processInvalidateOnRegex: {
-				//'stderr':[{regex:'.*error.*',flags:'ig'}]
-			},
-			processCwd: './',
-			processUid: null,
-			processGid: null,
-			initCommands: ['LANG=C;echo'],	// to catch banners and pseudo-terminal warnings
-			validateFunction: function (processProxy) {
-				return processProxy.isValid();
-			},
-		});
-	}
+const commands = {
+	hosts		: get_hosts,
+	probes		: get_probes,
+	history		: get_history,
+	kubectxt	: get_kubectxt,
+	status		: get_status,
 
-	getProxy(':localnet_discover').executeCommands([
-		'node scripts/local-network-discover.mjs'
-	]).then(function (res) {
-		socket.send(JSON.stringify({
-			cmd: 'localnet',
-			result: JSON.parse(res[0].stdout)
-		}));
-	}).catch(function (e) {
-		return { cmd: 'localnet', error: e };
-	});
-}
+	localnet: async () =>
+		getProxy(':localnet_discover')
+		.executeCommands(['node scripts/local-network-discover.mjs'])
+		.then((res) => { return { result: JSON.parse(res[0].stdout) }}),
 
-function probeWS(socket, host, probe) {
-	try {
+	probe_kubectxt: async (id) =>
+		getProxy(':probe_kubectxt')
+		.executeCommands([`node scripts/kubernetes.mjs ${id}`])
+		.then((res) => { return { result: JSON.parse(res[0].stdout) }}),
+
+	run: async (host, cmd) =>
+		getProxy(host, 'scripts/generic.sh', [host])
+		.executeCommands([cmd])
+		.then((res) => {
+			return {
+				shell: cmd,
+				host,
+				id,
+				stdout: res[0].stdout,
+				stderr: res[0].stderr
+			};
+		}),
+
+    probe: async (host, probe) => {
 		if (!(probe in probes))
 			return { host, probe, error: 'No such probe' };
 
-		getProxy(host).executeCommands([probes[probe].command]).then(function (res) {
+		return await getProxy(host, 'scripts/generic.sh', [host])
+		.executeCommands([probes[probe].command])
+		.then(async (res) => {
 			let msg = {
 				cmd: 'probe',
 				host: host,
@@ -274,38 +222,22 @@ function probeWS(socket, host, probe) {
 			}
 
 			if (undefined !== probes[probe].localFilter) {
-				runFilter(socket, msg);
+				return await runFilter(socket, msg);
 			} else {
-				socket.send(JSON.stringify(msg));
+				return msg;
 			}
-			return;
-		}).catch(function (e) {
-			return { cmd: 'probe', host: host, probe: probe, error: e };
-		});
-	} catch (e) {
-		return { cmd: 'probe', host: host, probe: probe, error: e };
+		})
 	}
 }
 
-function run(socket, host, id, cmd) {
+async function command(socket, name, params = []) {
 	try {
-		getProxy(host).executeCommands([cmd]).then(function (res) {
-			let msg = {
-				cmd: 'run',
-				shell: cmd,
-				host: host,
-				id: id,
-				stdout: res[0].stdout,
-				stderr: res[0].stderr
-			};
-
-			socket.send(JSON.stringify(msg));
-			return;
-		}).catch(function (e) {
-			return { cmd: 'run', host: host, id: id, error: e };
-		});
+		let msg = await commands[name](...params);
+		msg.cmd = name;
+		socket.send(JSON.stringify(msg));
 	} catch (e) {
-		return { cmd: 'run', host: host, id: id, error: e };
+		console.error(e);
+		socket.send(JSON.stringify({ cmd: name, ...params, error: e }));
 	}
 }
 
@@ -324,19 +256,16 @@ const wsServer = new WebSocket.Server({
 	path: "/wurmterm"
 });
 
-var clientAuth = [];
+var clientAuth = {};
 var credential = Buffer.from(config.client.auth, 'base64').toString();
 
-wsServer.on('connection', (ws, req, client) => {
+wsServer.on('connection', (ws) => {
 	clientAuth[ws] = false;
 
 	ws.on('error', console.error);
 
 	// Send a version so frontend can check for compatibility
-	ws.send(JSON.stringify({
-		cmd: 'version',
-		value: '0.9.12'
-	}));
+	ws.send(JSON.stringify({ cmd: 'version', value: '0.9.13' }));
 
 	ws.on('message', function (message) {
 		// Auth message handling
@@ -362,41 +291,21 @@ wsServer.on('connection', (ws, req, client) => {
 		// General syntax is "<command>[ <parameters>]"
 		m = ('' + message).match(/^(\w+)( (.+))?$/m);
 		if (m) {
-			let cmd = m[1];
-			let params = m[3];
+			if (['hosts', 'probes', 'history', 'kubectxt', 'localnet', 'status'].includes(m[1]))
+				return command(ws, m[1]);
 
-			if (cmd === 'hosts')
-				return get_hosts(ws);
-			if (cmd === 'probes')
-				return get_probes(ws);
-			if (cmd === 'history')
-				return get_history(ws);
-			if (cmd === 'kubectxt')
-				return get_kubectxt(ws);
-			if (cmd === 'localnet')
-				return get_localnet(ws);
-			if (cmd === 'status')
-				return get_status(ws);
+			if (m[0].match(/^run (\w+):::(\w+):::(.+)$/))
+				return command(ws, m[1], [RegExp.$1, RegExp.$2, RegExp.$3]);
 
-			if (cmd === 'run') {
-				// we expect message in format "run <host>:::<id>:::<cmd>"
-				let tmp = params.split(/:::/);
-				return run(ws, tmp[0], tmp[1], tmp[2]);
-			}
+			if (m[0].match(/^probe_kubectxt (\S+)$/))
+				return command(ws, m[1], [RegExp.$1]);
 
-			if (cmd === 'probe') {
-				// we expect message in format "probe <host>:::<probe>"
-				let tmp = params.split(/:::/);
-				return probeWS(ws, tmp[0], tmp[1]);
-			}
+			if (m[0].match(/^probe (\S+):::(\w+)$/))
+				return command(ws, m[1], [RegExp.$1, RegExp.$2]);
 		}
-		ws.send(JSON.stringify({
-			cmd: m[1],
-			error: 'Unsupported command'
-		}));
+		ws.send(JSON.stringify({ cmd: m[1], error: 'Unsupported command' }));
 	});
-	ws.on('close', function (reasonCode, description) {
-	});
+	ws.on('close', () => {});
 });
 
 console.log(`Server running at ws://${config.server.host}:${config.server.port}/`);

@@ -1,0 +1,5 @@
+- Add location hash routing
+- Update WurmTermView links to use it
+- Move host results to same structure as k8s
+- Merge both result hash subkeys into one
+- Have one rendering template only
